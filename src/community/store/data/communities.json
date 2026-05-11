@@ -1,0 +1,122 @@
+[
+  {
+    "id": 1,
+    "title": "Pistis Yoga",
+    "image": "https://i.pravatar.cc/300?img=11",
+    "membersCount": 245,
+    "members": [
+      { "id": 1, "name": "John Doe", "avatar": "https://i.pravatar.cc/40?img=1", "role": "admin" },
+      { "id": 2, "name": "Jane Smith", "avatar": "https://i.pravatar.cc/40?img=2", "role": "member" }
+    ],
+    "description": "Weekly yoga sessions",
+    "createdBy": 1
+  },
+  {
+    "id": 2,
+    "title": "Pistis Developers Hub",
+    "image": "https://i.pravatar.cc/300?img=12",
+    "membersCount": 320,
+    "members": [
+      { "id": 3, "name": "Michael Lee", "avatar": "https://i.pravatar.cc/40?img=3", "role": "admin" },
+      { "id": 4, "name": "Sarah Kim", "avatar": "https://i.pravatar.cc/40?img=4", "role": "member" }
+    ],
+    "description": "A space for developers to collaborate",
+    "createdBy": 3
+  },
+  {
+    "id": 3,
+    "title": "Pistis Fitness Club",
+    "image": "https://i.pravatar.cc/300?img=13",
+    "membersCount": 198,
+    "members": [
+      { "id": 5, "name": "David Brown", "avatar": "https://i.pravatar.cc/40?img=5", "role": "admin" },
+      { "id": 6, "name": "Emma Wilson", "avatar": "https://i.pravatar.cc/40?img=6", "role": "member" }
+    ],
+    "description": "Daily workout routines and challenges",
+    "createdBy": 5
+  },
+  {
+    "id": 4,
+    "title": "Pistis Book Club",
+    "image": "https://i.pravatar.cc/300?img=14",
+    "membersCount": 150,
+    "members": [
+      { "id": 7, "name": "Daniel Evans", "avatar": "https://i.pravatar.cc/40?img=7", "role": "admin" },
+      { "id": 8, "name": "Sophia Taylor", "avatar": "https://i.pravatar.cc/40?img=8", "role": "member" }
+    ],
+    "description": "Monthly book discussions",
+    "createdBy": 7
+  },
+  {
+    "id": 5,
+    "title": "Pistis Music Crew",
+    "image": "https://i.pravatar.cc/300?img=15",
+    "membersCount": 275,
+    "members": [
+      { "id": 9, "name": "Chris Martin", "avatar": "https://i.pravatar.cc/40?img=9", "role": "admin" },
+      { "id": 10, "name": "Olivia White", "avatar": "https://i.pravatar.cc/40?img=10", "role": "member" }
+    ],
+    "description": "Music lovers and creators community",
+    "createdBy": 9
+  },
+  {
+    "id": 6,
+    "title": "Pistis Entrepreneurs",
+    "image": "https://i.pravatar.cc/300?img=16",
+    "membersCount": 410,
+    "members": [
+      { "id": 11, "name": "James Scott", "avatar": "https://i.pravatar.cc/40?img=11", "role": "admin" },
+      { "id": 12, "name": "Isabella Moore", "avatar": "https://i.pravatar.cc/40?img=12", "role": "member" }
+    ],
+    "description": "Startup ideas and business growth",
+    "createdBy": 11
+  },
+  {
+    "id": 7,
+    "title": "Pistis Photographers",
+    "image": "https://i.pravatar.cc/300?img=17",
+    "membersCount": 132,
+    "members": [
+      { "id": 13, "name": "William Clark", "avatar": "https://i.pravatar.cc/40?img=13", "role": "admin" },
+      { "id": 14, "name": "Ava Martinez", "avatar": "https://i.pravatar.cc/40?img=14", "role": "member" }
+    ],
+    "description": "Capturing moments through lenses",
+    "createdBy": 13
+  },
+  {
+    "id": 8,
+    "title": "Pistis Gamers Arena",
+    "image": "https://i.pravatar.cc/300?img=18",
+    "membersCount": 500,
+    "members": [
+      { "id": 15, "name": "Ethan Walker", "avatar": "https://i.pravatar.cc/40?img=15", "role": "admin" },
+      { "id": 16, "name": "Mia Hall", "avatar": "https://i.pravatar.cc/40?img=16", "role": "member" }
+    ],
+    "description": "Gaming tournaments and discussions",
+    "createdBy": 15
+  },
+  {
+    "id": 9,
+    "title": "Pistis Writers Circle",
+    "image": "https://i.pravatar.cc/300?img=19",
+    "membersCount": 210,
+    "members": [
+      { "id": 17, "name": "Alexander Young", "avatar": "https://i.pravatar.cc/40?img=17", "role": "admin" },
+      { "id": 18, "name": "Charlotte King", "avatar": "https://i.pravatar.cc/40?img=18", "role": "member" }
+    ],
+    "description": "Creative writing and storytelling",
+    "createdBy": 17
+  },
+  {
+    "id": 10,
+    "title": "Pistis AI Lab",
+    "image": "https://i.pravatar.cc/300?img=20",
+    "membersCount": 365,
+    "members": [
+      { "id": 19, "name": "Benjamin Wright", "avatar": "https://i.pravatar.cc/40?img=19", "role": "admin" },
+      { "id": 20, "name": "Amelia Green", "avatar": "https://i.pravatar.cc/40?img=20", "role": "member" }
+    ],
+    "description": "Exploring AI and machine learning",
+    "createdBy": 19
+  }
+]
