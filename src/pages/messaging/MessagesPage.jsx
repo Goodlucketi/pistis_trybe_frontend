@@ -19,12 +19,19 @@ const MessagesPage = () => {
  
   useEffect(() => {
   const url = import.meta.env.VITE_SOCKET_URL;
-  alert('SOCKET URL: ' + url); // Will show undefined
   
-  const socket = io(url, { transports: ['websocket', 'polling'] });
-  
+  const socket = io(url, {
+    transports: ['websocket', 'polling'],
+    withCredentials: true
+  });
+
+  socket.on('connect', () => {
+    alert('CONNECTED: ' + socket.id); // Success
+  });
+
   socket.on('connect_error', (err) => {
-    alert('ERROR: ' + err.message); // Will show xhr poll error
+    alert('ERROR: ' + err.message); // This is what we need
+    console.log(err); // Full error in devtools if you use chrome://inspect
   });
 }, []);
   // ── Current user ──
