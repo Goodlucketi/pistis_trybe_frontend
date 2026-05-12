@@ -20,36 +20,44 @@ const ConversationList = ({
   const [showNewChat, setShowNewChat] = useState(false);
 
   const filteredConversations = useMemo(() => {
-    let filtered = conversations;
+    let filtered = conversations.filter(Boolean); // ← remove null conversations
 
     if (activeFilter === "unread") {
-      filtered = filtered.filter((c) => c.unreadCount > 0);
+      filtered = filtered.filter((c) => (c?.unreadCount || 0) > 0);
     } else if (activeFilter === "groups") {
-      filtered = filtered.filter((c) => c.type === "group");
+      filtered = filtered.filter((c) => c?.type === "group");
     }
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter((c) => {
         const name =
-          c.type === "group"
-            ? c.name
-            : c.participants.find((p) => p.id !== currentUser.id)?.name;
+          c?.type === "group"
+            ? c?.name
+            : c?.participants?.find((p) => p?.id !== currentUser?.id)?.name;
         return (
           name?.toLowerCase().includes(query) ||
-          c.lastMessage?.text?.toLowerCase().includes(query)
+          c?.lastMessage?.text?.toLowerCase().includes(query)
         );
       });
     }
 
+    // ← SAFER SORT: check timestamp exists before using
     return filtered.sort((a, b) => {
-      const aTime = new Date(a.lastMessage?.timestamp || a.createdAt || 0);
-      const bTime = new Date(b.lastMessage?.timestamp || b.createdAt || 0);
+      const aTime = new Date(
+        a?.lastMessage?.timestamp || a?.createdAt || 0
+      ).getTime();
+      const bTime = new Date(
+        b?.lastMessage?.timestamp || b?.createdAt || 0
+      ).getTime();
       return bTime - aTime;
     });
-  }, [conversations, activeFilter, searchQuery, currentUser.id]);
+  }, [conversations, activeFilter, searchQuery, currentUser?.id]);
 
-  const unreadTotal = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+  const unreadTotal = conversations.reduce(
+    (sum, c) => sum + (c?.unreadCount || 0),
+    0
+  );
 
   const filters = [
     { key: "all", label: "All" },
@@ -128,10 +136,10 @@ const ConversationList = ({
         ) : (
           filteredConversations.map((conv) => (
             <ConversationItem
-              key={conv.id}
+              key={conv?.id}
               conversation={conv}
               currentUser={currentUser}
-              isActive={conv.id === activeId}
+              isActive={conv?.id === activeId}
               onClick={() => onSelectConversation?.(conv)}
             />
           ))
