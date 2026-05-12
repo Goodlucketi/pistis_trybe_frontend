@@ -13,14 +13,16 @@ import { loginUser } from "../../services/AuthService";
 
 const Login = () => {
   const navigate = useNavigate();
-
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState("");
 
   const validate = (values) => {
     const errors = {};
     if (!values.email) errors.email = "Email is required";
+    else if (!/\S+@\S+\.\S+/.test(values.email)) errors.email = "Email is invalid";
+    
     if (!values.password) errors.password = "Password is required";
+    else if (values.password.length < 6) errors.password = "Password must be 6+ characters";
     return errors;
   };
 
@@ -29,14 +31,17 @@ const Login = () => {
     validate
   );
 
+  // Check if form is valid: no errors + both fields have values
+  const isFormValid = 
+    values.email && 
+    values.password && 
+    Object.keys(errors).length === 0;
+
   const handleGoogleSuccess = (credentialResponse) => {
     try {
       const decoded = jwtDecode(credentialResponse.credential);
       console.log("Google User:", decoded);
-
       localStorage.setItem("user", JSON.stringify(decoded));
-
-      // ✅ Fixed: leading slash
       navigate("/dashboard/feed");
     } catch (error) {
       console.error("Google Login Error:", error);
@@ -53,14 +58,11 @@ const Login = () => {
     try {
       setLoading(true);
       setServerError("");
-
       const data = await loginUser(values);
-
       if (data?.accessToken) {
         localStorage.setItem("accessToken", data.accessToken);
       }
-
-      console.log("Login success:", data);
+      // console.log("Login success:", data);
       navigate("/dashboard/feed");
     } catch (error) {
       setServerError(error.message || "Login failed");
@@ -98,7 +100,12 @@ const Login = () => {
             error={errors.password}
           />
 
-          <Button type="submit" loading={loading}>
+          <Button 
+            type="submit" 
+            loading={loading}
+            variant={isFormValid && !loading ? "active" : "primary"}
+            disabled={!isFormValid || loading}
+          >
             Sign In
           </Button>
         </form>
@@ -113,11 +120,10 @@ const Login = () => {
           <hr className="border-gray-300 w-full" />
         </div>
 
-        {/* ✅ Only render one GoogleLogin, inside the return */}
         <GoogleLogin
           onSuccess={handleGoogleSuccess}
           onError={handleGoogleError}
-          useOneTap={false} // disable to reduce console warnings
+          useOneTap={false}
         />
 
         <p className="text-sm mt-6 text-gray-500 text-center">

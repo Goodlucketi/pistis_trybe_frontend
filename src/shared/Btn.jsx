@@ -2,7 +2,8 @@ const Button = ({
   children,
   type = "button",
   variant = "primary",
-  loading = true,
+  loading = false,
+  disabled = false,
   className = "",
   ...props
 }) => {
@@ -11,13 +12,14 @@ const Button = ({
 
   const variants = {
     primary: "bg-gray-300 text-white",
+    active: "bg-[#401667] text-white hover:bg-blue-700",
     secondary: "bg-gray-200 text-gray-800 hover:bg-gray-300",
   };
 
   return (
     <button
       type={type}
-      disabled={loading}
+      disabled={loading || disabled}
       className={`${baseStyles} ${variants[variant]} ${className}`}
       {...props}
     >
