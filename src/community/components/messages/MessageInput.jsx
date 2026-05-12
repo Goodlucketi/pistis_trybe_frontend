@@ -25,17 +25,17 @@ const MessageInput = ({ onSendMessage, replyTo, onCancelReply }) => {
       onSendMessage({
         text: text.trim(),
         attachments: attachments,
-        replyTo: replyTo?.id || null
+        replyTo: replyTo?.id || null // ← already safe
       });
       setText("");
       setAttachments([]);
       setShowEmojiPicker(false);
-      onCancelReply?.(); // clear reply after sending
+      onCancelReply?.();
     }
   };
 
   const handleFileSelect = (e) => {
-    const files = Array.from(e.target.files);
+    const files = Array.from(e.target.files || []); // ← guard against null
     const newAttachments = files.map(file => ({
       id: Date.now() + Math.random(),
       name: file.name,
@@ -50,24 +50,25 @@ const MessageInput = ({ onSendMessage, replyTo, onCancelReply }) => {
 
   const removeAttachment = (id) => {
     setAttachments(prev => {
-      const attachment = prev.find(a => a.id === id);
+      const attachment = prev.find(a => a?.id === id);
       if (attachment?.url) URL.revokeObjectURL(attachment.url);
-      return prev.filter(a => a.id!== id);
+      return prev.filter(a => a?.id!== id);
     });
   };
 
   const handleEmojiClick = (emojiData) => {
-    setText(prev => prev + emojiData.emoji);
+    setText(prev => prev + (emojiData?.emoji || ""));
     setShowEmojiPicker(false);
   };
 
   const formatFileSize = (bytes) => {
+    if (!bytes && bytes!== 0) return "0 B"; // ← guard
     if (bytes < 1024) return bytes + " B";
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
     return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   };
 
-  const isImage = (type) => type.startsWith("image/");
+  const isImage = (type) => type?.startsWith("image/") || false; // ← guard
 
   return (
     <div className="relative">
@@ -86,12 +87,14 @@ const MessageInput = ({ onSendMessage, replyTo, onCancelReply }) => {
         </div>
       )}
 
-      {/* Reply preview */}
+      {/* Reply preview - SAFE VERSION */}
       {replyTo && (
         <div className="px-4 pt-3 pb-2 border-t border-gray-200 bg-purple-50 flex items-start justify-between gap-3">
           <div className="flex-1 border-l-2 border-purple-600 pl-3 min-w-0">
             <p className="text-xs font-semibold text-purple-700">Replying to</p>
-            <p className="text-sm text-gray-800 truncate">{replyTo.text}</p>
+            <p className="text-sm text-gray-800 truncate">
+              {replyTo?.text || "Message"} {/* ← fallback if text is null */}
+            </p>
           </div>
           <button
             type="button"
@@ -109,26 +112,26 @@ const MessageInput = ({ onSendMessage, replyTo, onCancelReply }) => {
           <div className="flex gap-2 overflow-x-auto pb-2">
             {attachments.map((file) => (
               <div
-                key={file.id}
+                key={file?.id}
                 className="relative flex-shrink-0 w-20 h-20 bg-gray-100 rounded-lg border border-gray-200 overflow-hidden group"
               >
-                {isImage(file.type)? (
+                {isImage(file?.type)? (
                   <img
-                    src={file.url}
-                    alt={file.name}
+                    src={file?.url}
+                    alt={file?.name || "attachment"}
                     className="w-full h-full object-cover"
                   />
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center p-1">
                     <File className="w-6 h-6 text-gray-400 mb-1" />
-                    <span className="text- text-gray-600 text-center truncate w-full px-1">
-                      {file.name}
+                    <span className="text-xs text-gray-600 text-center truncate w-full px-1">
+                      {file?.name || "file"}
                     </span>
                   </div>
                 )}
                 <button
                   type="button"
-                  onClick={() => removeAttachment(file.id)}
+                  onClick={() => removeAttachment(file?.id)}
                   className="absolute -top-1 -right-1 bg-gray-800 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <X className="w-3 h-3" />
@@ -141,7 +144,6 @@ const MessageInput = ({ onSendMessage, replyTo, onCancelReply }) => {
 
       <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200 bg-white">
         <div className="flex items-end gap-2">
-          {/* File input - hidden */}
           <input
             ref={fileInputRef}
             type="file"
