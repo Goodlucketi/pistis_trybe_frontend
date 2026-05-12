@@ -13,24 +13,45 @@ const ChatHeader = ({
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // ← GUARD: don't render if critical props missing
+  if (!conversation ||!currentUser) return null;
+
   const isGroup = conversation.type === "group";
-  const otherUser =!isGroup? conversation.participants.find(p => p.id!== currentUser.id) : null;
+  const otherUser =!isGroup
+ ? conversation.participants?.find(p => p?.id!== currentUser.id)
+    : null;
 
-  const displayName = isGroup? conversation.name : otherUser.name;
-  const displayAvatar = isGroup? conversation.avatar : otherUser.avatar;
+  const displayName = isGroup
+ ? conversation.name || "Group Chat"
+    : otherUser?.name || "Unknown User";
 
+  const displayAvatar = isGroup
+ ? conversation.avatar || "/default-group.png"
+    : otherUser?.avatar || "/default-avatar.png";
+
+  // ← SAFE: handle null timestamps and participants
   const getStatus = () => {
     if (conversation.isTyping) return "typing...";
-    if (isGroup) return `${conversation.participants.length} members`;
-    if (otherUser.online) return "Active now";
-    if (otherUser.lastSeen) return `Last seen ${formatDistanceToNow(new Date(otherUser.lastSeen), { addSuffix: true })}`;
+    if (isGroup) return `${conversation.participants?.length || 0} members`;
+    if (otherUser?.online) return "Active now";
+    
+    // Safe lastSeen formatting
+    if (otherUser?.lastSeen) {
+      try {
+        const date = new Date(otherUser.lastSeen);
+        if (isNaN(date.getTime())) return "Offline";
+        return `Last seen ${formatDistanceToNow(date, { addSuffix: true })}`;
+      } catch {
+        return "Offline";
+      }
+    }
     return "Offline";
   };
 
   const handleSearch = (e) => {
     const query = e.target.value;
     setSearchQuery(query);
-    onSearch(query);
+    onSearch?.(query); // ← optional chaining
   };
 
   const handleHeaderClick = () => {
@@ -53,7 +74,7 @@ const ChatHeader = ({
       >
         <div className="relative flex-shrink-0">
           <img src={displayAvatar} alt={displayName} className="w-10 h-10 rounded-full object-cover" />
-          {!isGroup && otherUser.online && (
+          {!isGroup && otherUser?.online && (
             <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></span>
           )}
         </div>
@@ -85,7 +106,7 @@ const ChatHeader = ({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onOpenGroupInfo();
+              onOpenGroupInfo?.();
             }}
             className="p-2 hover:bg-gray-100 rounded-full"
             title="Group info"
@@ -99,7 +120,7 @@ const ChatHeader = ({
             setShowSearch(!showSearch);
             if (showSearch) {
               setSearchQuery("");
-              onSearch("");
+              onSearch?.("");
             }
           }}
           className="p-2 hover:bg-gray-100 rounded-full"
