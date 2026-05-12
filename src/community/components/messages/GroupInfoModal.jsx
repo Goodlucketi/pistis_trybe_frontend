@@ -1,12 +1,13 @@
-import { X, UserPlus, LogOut, Crown, Shield, MoreVertical, Trash2 } from "lucide-react";
+import { X, UserPlus, LogOut, Crown, Shield, MoreVertical, Trash2, Camera, Check } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import { format } from "date-fns";
 
 const GroupInfoModal = ({
   isOpen,
   onClose,
   conversation,
   currentUser,
-  contacts,
+  contacts = [],
   onAddMembers,
   onRemoveMember,
   onPromoteAdmin,
@@ -19,17 +20,24 @@ const GroupInfoModal = ({
   const [selectedToAdd, setSelectedToAdd] = useState([]);
   const [memberMenuOpen, setMemberMenuOpen] = useState(null);
   const [isEditingName, setIsEditingName] = useState(false);
-  const [newName, setNewName] = useState(conversation?.name || "");
+  const [newName, setNewName] = useState("");
   const menuRef = useRef(null);
 
-  if (!isOpen ||!conversation || conversation.type!== 'group') return null;
+  // ← GUARD: don't render if critical props missing
+  if (!isOpen ||!conversation || conversation.type!== 'group' ||!currentUser) return null;
 
-  const currentUserRole = conversation.participants.find(p => p.id === currentUser.id)?.role;
+  // ← SAFE: update newName when conversation changes
+  useEffect(() => {
+    setNewName(conversation?.name || "");
+  }, [conversation?.name]);
+
+  const participants = conversation.participants || [];
+  const currentUserRole = participants.find(p => p?.id === currentUser.id)?.role;
   const isAdmin = currentUserRole === 'admin';
   const isCreator = conversation.createdBy === currentUser.id;
 
-  const availableContacts = contacts.filter(c =>
-   !conversation.participants.find(p => p.id === c.id)
+  const availableContacts = (contacts || []).filter(c =>
+ !participants.find(p => p?.id === c?.id)
   );
 
   useEffect(() => {
@@ -58,10 +66,22 @@ const GroupInfoModal = ({
 
   const toggleAddMember = (contact) => {
     setSelectedToAdd(prev =>
-      prev.find(m => m.id === contact.id)
-       ? prev.filter(m => m.id!== contact.id)
+      prev.find(m => m?.id === contact?.id)
+     ? prev.filter(m => m?.id!== contact?.id)
         : [...prev, contact]
     );
+  };
+
+  // ← SAFE: handle null createdAt
+  const getCreatedDate = () => {
+    if (!conversation.createdAt) return "";
+    try {
+      const date = new Date(conversation.createdAt);
+      if (isNaN(date.getTime())) return "";
+      return format(date, "MMM d, yyyy");
+    } catch {
+      return "";
+    }
   };
 
   return (
@@ -80,13 +100,13 @@ const GroupInfoModal = ({
           <div className="p-6 text-center border-b">
             <div className="relative inline-block">
               <img
-                src={conversation.avatar}
+                src={conversation.avatar || "/default-group.png"}
                 className="w-24 h-24 rounded-full object-cover mx-auto mb-3"
-                alt={conversation.name}
+                alt={conversation.name || "Group"}
               />
               {isAdmin && (
                 <button
-                  onClick={() => onUpdateGroupAvatar()}
+                  onClick={() => onUpdateGroupAvatar?.()}
                   className="absolute bottom-3 right-0 bg-purple-600 text-white p-2 rounded-full hover:bg-purple-700"
                 >
                   <Camera className="w-4 h-4" />
@@ -111,15 +131,15 @@ const GroupInfoModal = ({
                 className={`text-xl font-semibold ${isAdmin? 'cursor-pointer hover:text-purple-600' : ''}`}
                 onClick={() => isAdmin && setIsEditingName(true)}
               >
-                {conversation.name}
+                {conversation.name || "Group Chat"}
               </h3>
             )}
 
             <p className="text-sm text-gray-500 mt-1">
-              Created {new Date(conversation.createdAt).toLocaleDateString()}
+              Created {getCreatedDate()}
             </p>
             <p className="text-sm text-gray-500">
-              {conversation.participants.length} members
+              {participants.length} members
             </p>
           </div>
 
@@ -139,22 +159,26 @@ const GroupInfoModal = ({
             </div>
 
             <div className="space-y-1">
-              {conversation.participants.map(member => (
-                <div key={member.id} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg">
+              {participants.map(member => (
+                <div key={member?.id || Math.random()} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-3 flex-1">
-                    <img src={member.avatar} className="w-10 h-10 rounded-full" />
+                    <img
+                      src={member?.avatar || "/default-avatar.png"}
+                      className="w-10 h-10 rounded-full object-cover"
+                      alt={member?.name || "User"}
+                    />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">
-                        {member.name} {member.id === currentUser.id && '(You)'}
+                        {member?.name || "Unknown"} {member?.id === currentUser.id && '(You)'}
                       </p>
                       <div className="flex items-center gap-1">
-                        {member.role === 'admin' && (
+                        {member?.role === 'admin' && (
                           <div className="flex items-center gap-1 text-xs text-purple-600">
                             <Crown className="w-3 h-3" />
                             Admin
                           </div>
                         )}
-                        {conversation.createdBy === member.id && (
+                        {conversation.createdBy === member?.id && (
                           <span className="text-xs text-gray-500">Creator</span>
                         )}
                       </div>
@@ -162,7 +186,7 @@ const GroupInfoModal = ({
                   </div>
 
                   {/* Member menu - only for admins, not self, not creator */}
-                  {isAdmin && member.id!== currentUser.id && conversation.createdBy!== member.id && (
+                  {isAdmin && member?.id!== currentUser.id && conversation.createdBy!== member?.id && (
                     <div className="relative">
                       <button
                         onClick={() => setMemberMenuOpen(memberMenuOpen === member.id? null : member.id)}
@@ -173,7 +197,7 @@ const GroupInfoModal = ({
 
                       {memberMenuOpen === member.id && (
                         <div ref={menuRef} className="absolute right-0 top-8 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-10 w-40">
-                          {member.role!== 'admin' && (
+                          {member?.role!== 'admin' && (
                             <button
                               onClick={() => {
                                 onPromoteAdmin(member.id);
@@ -253,10 +277,10 @@ const GroupInfoModal = ({
                 <p className="text-center text-gray-500 py-8">All contacts already in group</p>
               ) : (
                 availableContacts.map(contact => {
-                  const isSelected = selectedToAdd.find(m => m.id === contact.id);
+                  const isSelected = selectedToAdd.find(m => m?.id === contact?.id);
                   return (
                     <button
-                      key={contact.id}
+                      key={contact?.id}
                       onClick={() => toggleAddMember(contact)}
                       className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg"
                     >
@@ -265,8 +289,12 @@ const GroupInfoModal = ({
                       }`}>
                         {isSelected && <Check className="w-3 h-3 text-white" />}
                       </div>
-                      <img src={contact.avatar} className="w-10 h-10 rounded-full" />
-                      <span className="font-medium">{contact.name}</span>
+                      <img
+                        src={contact?.avatar || "/default-avatar.png"}
+                        className="w-10 h-10 rounded-full object-cover"
+                        alt={contact?.name || "Contact"}
+                      />
+                      <span className="font-medium">{contact?.name || "Unknown"}</span>
                     </button>
                   );
                 })
