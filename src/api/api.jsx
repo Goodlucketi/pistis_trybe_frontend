@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8080/v1",
+  baseURL: import.meta.env.VITE_API_URL || "https://pistis-trybe-backend.onrender.com/v1",
   withCredentials: false,
   headers: { "Content-Type": "application/json" },
 });
