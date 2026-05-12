@@ -1,13 +1,14 @@
 import { useState } from "react";
+import { format, isToday, isYesterday, isSameDay } from "date-fns";
 import ChatHeader from "./ChatHeader";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 import ForwardModal from "./ForwardModal";
-import GroupInfoModal from "./GroupInfoModal"; // ADD THIS
+import GroupInfoModal from "./GroupInfoModal";
 
 const ChatWindow = ({
   conversation,
-  messages,
+  messages = [],
   currentUser,
   onSendMessage,
   onReact,
@@ -16,41 +17,48 @@ const ChatWindow = ({
   isMobile,
   onDelete,
   allConversations,
-  setConversations, // ADD THIS PROP FROM PARENT
-  contacts // ADD THIS PROP FROM PARENT
+  setConversations,
+  contacts
 }) => {
   const [replyTo, setReplyTo] = useState(null);
   const [forwardingMessage, setForwardingMessage] = useState(null);
-  const [showGroupInfo, setShowGroupInfo] = useState(false); // ADD THIS
+  const [showGroupInfo, setShowGroupInfo] = useState(false);
+
+  // ← GUARD: don't crash if props missing
+  if (!conversation ||!currentUser) return null;
 
   const handleSend = ({ text, attachments, replyTo: replyId }) => {
     onSendMessage({ text, attachments, replyTo: replyId });
     setReplyTo(null);
   };
 
+  // ← SAFE: check conversation exists before updating
   const handleAddMembers = (newMembers) => {
+    if (!setConversations ||!conversation?.id) return;
     setConversations(prev => prev.map(c =>
-      c.id === conversation.id
-       ? {...c, participants: [...c.participants,...newMembers.map(m => ({...m, role: 'member' }))] }
+      c?.id === conversation.id
+      ? {...c, participants: [...(c.participants || []),...newMembers.map(m => ({...m, role: 'member' }))] }
         : c
     ));
   };
 
   const handleRemoveMember = (memberId) => {
+    if (!setConversations ||!conversation?.id) return;
     setConversations(prev => prev.map(c =>
-      c.id === conversation.id
-       ? {...c, participants: c.participants.filter(p => p.id!== memberId) }
+      c?.id === conversation.id
+      ? {...c, participants: (c.participants || []).filter(p => p?.id!== memberId) }
         : c
     ));
   };
 
   const handlePromoteAdmin = (memberId) => {
+    if (!setConversations ||!conversation?.id) return;
     setConversations(prev => prev.map(c =>
-      c.id === conversation.id
-       ? {
+      c?.id === conversation.id
+      ? {
            ...c,
-           participants: c.participants.map(p =>
-             p.id === memberId? {...p, role: 'admin' } : p
+           participants: (c.participants || []).map(p =>
+             p?.id === memberId? {...p, role: 'admin' } : p
            )
          }
         : c
@@ -58,30 +66,35 @@ const ChatWindow = ({
   };
 
   const handleLeaveGroup = () => {
-    setConversations(prev => prev.filter(c => c.id!== conversation.id));
-    onBack();
+    if (!setConversations ||!conversation?.id) return;
+    setConversations(prev => prev.filter(c => c?.id!== conversation.id));
+    onBack?.();
   };
 
   const handleDeleteGroup = () => {
-    setConversations(prev => prev.filter(c => c.id!== conversation.id));
-    onBack();
+    if (!setConversations ||!conversation?.id) return;
+    setConversations(prev => prev.filter(c => c?.id!== conversation.id));
+    onBack?.();
   };
 
   const handleUpdateGroupName = (newName) => {
+    if (!setConversations ||!conversation?.id) return;
     setConversations(prev => prev.map(c =>
-      c.id === conversation.id? {...c, name: newName } : c
+      c?.id === conversation.id? {...c, name: newName } : c
     ));
   };
 
   const handleUpdateGroupAvatar = () => {
-    // You can implement file upload here
     console.log('Update avatar clicked');
   };
 
   const handleSearch = (query) => {
     console.log('Search:', query);
-    // Implement search logic or bubble up
   };
+
+  // ← SAFE: filter out null/undefined messages
+  const safeMessages = (messages || []).filter(m => m && m.id);
+  const safeConversations = (allConversations || []).filter(c => c && c.id);
 
   return (
     <div className="flex-1 flex flex-col h-full bg-gray-50 overflow-hidden">
@@ -92,12 +105,12 @@ const ChatWindow = ({
           onBack={onBack}
           isMobile={isMobile}
           onSearch={handleSearch}
-          onOpenGroupInfo={() => setShowGroupInfo(true)} // ADD THIS
+          onOpenGroupInfo={() => setShowGroupInfo(true)}
         />
       </div>
 
       <MessageList
-        messages={messages}
+        messages={safeMessages}
         currentUser={currentUser}
         conversation={conversation}
         onReply={setReplyTo}
@@ -117,7 +130,7 @@ const ChatWindow = ({
       {forwardingMessage && (
         <ForwardModal
           message={forwardingMessage}
-          conversations={allConversations.filter(c => c.id!== conversation.id)}
+          conversations={safeConversations.filter(c => c.id!== conversation?.id)}
           onConfirm={(targetId) => {
             onForward(forwardingMessage, targetId);
             setForwardingMessage(null);
@@ -127,13 +140,13 @@ const ChatWindow = ({
       )}
 
       {/* GROUP INFO MODAL */}
-      {showGroupInfo && conversation.type === 'group' && (
+      {showGroupInfo && conversation?.type === 'group' && (
         <GroupInfoModal
           isOpen={showGroupInfo}
           onClose={() => setShowGroupInfo(false)}
           conversation={conversation}
           currentUser={currentUser}
-          contacts={contacts}
+          contacts={contacts || []}
           onAddMembers={handleAddMembers}
           onRemoveMember={handleRemoveMember}
           onPromoteAdmin={handlePromoteAdmin}
