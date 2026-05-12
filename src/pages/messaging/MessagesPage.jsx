@@ -16,7 +16,17 @@ const MessagesPage = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [localMessages, setLocalMessages] = useState({});
   const { joinConversation, leaveConversation, on, startTyping, stopTyping } = useSocket();
-
+ 
+  useEffect(() => {
+  const url = import.meta.env.VITE_SOCKET_URL;
+  alert('SOCKET URL: ' + url); // Will show undefined
+  
+  const socket = io(url, { transports: ['websocket', 'polling'] });
+  
+  socket.on('connect_error', (err) => {
+    alert('ERROR: ' + err.message); // Will show xhr poll error
+  });
+}, []);
   // ── Current user ──
   const { data: currentUser } = useQuery({
     queryKey: ['me'],
