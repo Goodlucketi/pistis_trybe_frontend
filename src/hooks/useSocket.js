@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { io } from "socket.io-client";
 
-const SOCKET_URL = import.meta.env.VITE_API_URL?.replace("/v1", "") || "http://localhost:8080";
+const SOCKET_URL = import.meta.env.VITE_API_URL?.replace("/v1", "") || "https://pistis-trybe-backend.onrender.com";
 
 let socketInstance = null;
 
