@@ -3,7 +3,7 @@ import { formatDistanceToNow } from "date-fns";
 import { Users } from "lucide-react";
 
 const ConversationItem = ({ conversation, currentUser, isActive }) => {
-  if (!conversation ||!currentUser) return null; // ← guard against null props
+  if (!conversation ||!currentUser) return null;
 
   const isGroup = conversation.type === "group";
   const otherUser =!isGroup
@@ -21,8 +21,8 @@ const ConversationItem = ({ conversation, currentUser, isActive }) => {
   const isOnline =!isGroup && otherUser?.online;
 
   const { lastMessage, unreadCount = 0 } = conversation;
+  const hasUnread = unreadCount > 0; // ← key variable
 
-  // ← Safe time formatter
   const getTimeAgo = () => {
     if (!lastMessage?.timestamp) return "";
     try {
@@ -34,7 +34,6 @@ const ConversationItem = ({ conversation, currentUser, isActive }) => {
     }
   };
 
-  // ← Safe preview text
   const getPreviewText = () => {
     if (!lastMessage?.text) return "No messages yet";
     const prefix = lastMessage.senderId === currentUser.id? "You: " : "";
@@ -65,13 +64,15 @@ const ConversationItem = ({ conversation, currentUser, isActive }) => {
 
       <div className="flex-1 min-w-0">
         <div className="flex justify-between items-center mb-1">
-          <h3 className="font-semibold text-gray-900 truncate">{displayName}</h3>
-          <span className="text-xs text-gray-500 flex-shrink-0">
+          <h3 className={`truncate ${hasUnread? "font-bold text-gray-900" : "font-semibold text-gray-900"}`}>
+            {displayName}
+          </h3>
+          <span className={`text-xs flex-shrink-0 ${hasUnread? "text-purple-600 font-semibold" : "text-gray-500"}`}>
             {getTimeAgo()}
           </span>
         </div>
         <div className="flex justify-between items-center">
-          <p className={`text-sm truncate ${unreadCount? "text-gray-900 font-medium" : "text-gray-500"}`}>
+          <p className={`text-sm truncate ${hasUnread? "text-gray-900 font-bold" : "text-gray-500 font-normal"}`}>
             {getPreviewText()}
           </p>
           {unreadCount > 0 && (
