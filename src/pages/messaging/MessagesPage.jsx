@@ -39,44 +39,44 @@ const MessagesPage = () => {
   });
 
   // ── Normalize backend message to UI shape ──
-  const normalizeMessage = useCallback((msg) => ({
-    id: msg._id || msg.id,
-    senderId: msg.senderId?._id || msg.senderId,
-    senderName: msg.senderId?.fullName || "",
-    senderAvatar: msg.senderId?.avatarUrl || null,
-    text: msg.body || "",
-    attachments: msg.mediaUrl? [{ id: msg._id, url: msg.mediaUrl, type: "image/jpeg", name: "attachment" }] : [],
-    timestamp: msg.createdAt || msg.timestamp,
-    status: msg.isRead? "read" : "sent",
-    reactions: msg.reactions || {},
-    replyTo: msg.replyTo || null,
-    forwardedFrom: msg.forwardedFrom || null,
-  }), []);
+  const normalizeMessage = useCallback((msg) => {
+    if (!msg) return null;
+    return {
+      id: msg._id || msg.id,
+      senderId: msg.senderId?._id || msg.senderId,
+      senderName: msg.senderId?.fullName || "",
+      senderAvatar: msg.senderId?.avatarUrl || null,
+      text: msg.body || "",
+      attachments: msg.mediaUrl? [{ id: msg._id, url: msg.mediaUrl, type: "image/jpeg", name: "attachment" }] : [],
+      timestamp: msg.createdAt || msg.timestamp || new Date().toISOString(), // ← fallback if missing
+      status: msg.isRead? "read" : "sent",
+      reactions: msg.reactions || {},
+      replyTo: msg.replyTo || null,
+      forwardedFrom: msg.forwardedFrom || null,
+    };
+  }, []);
 
   // Sync fetched messages into localMessages — only seed, never overwrite local additions
   useEffect(() => {
     if (!messagesData?.messages ||!conversationId) return;
     setLocalMessages((prev) => {
-      // If we already have local messages for this conversation, merge:
-      // keep local messages that are newer than what the API returned
-      const fetched = messagesData.messages.map(normalizeMessage);
+      const fetched = messagesData.messages
+       .map(normalizeMessage)
+       .filter(Boolean); // ← remove nulls
       const existing = prev[conversationId] || [];
       const fetchedIds = new Set(fetched.map((m) => m.id));
-      // Keep optimistic/local messages not yet confirmed by server
-      const localOnly = existing.filter((m) =>!fetchedIds.has(m.id));
+      const localOnly = existing.filter((m) =>!fetchedIds.has(m?.id));
       return {
-       ...prev,
+      ...prev,
         [conversationId]: [...fetched,...localOnly],
       };
     });
   }, [messagesData, conversationId, normalizeMessage]);
 
   // ── Socket.IO: join/leave conversation room ──
-  // Also force a fresh message fetch when opening a conversation
   useEffect(() => {
     if (!conversationId) return;
     joinConversation(conversationId);
-    // Invalidate so any messages received while away are fetched fresh
     queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
     return () => leaveConversation(conversationId);
   }, [conversationId, joinConversation, leaveConversation, queryClient]);
@@ -87,48 +87,45 @@ const MessagesPage = () => {
       const chatId = message.chatId?.toString() || conversationId;
       const senderId = message.senderId?._id || message.senderId;
 
-      // Skip if this is our own message — already added optimistically
       if (senderId === currentUser?._id) {
         queryClient.invalidateQueries({ queryKey: ['chats'] });
         return;
       }
 
       const normalized = normalizeMessage(message);
+      if (!normalized) return;
 
-      // Add to local state immediately so receiver sees it without refresh
       setLocalMessages((prev) => {
         const existing = prev[chatId] || [];
-        // Avoid duplicates
-        const alreadyExists = existing.some((m) => m.id === normalized.id);
+        const alreadyExists = existing.some((m) => m?.id === normalized.id);
         if (alreadyExists) return prev;
         return {
-         ...prev,
+        ...prev,
           [chatId]: [...existing, normalized],
         };
       });
 
-      // Also invalidate the query so it stays in sync on refetch
       queryClient.invalidateQueries({ queryKey: ['messages', chatId] });
       queryClient.invalidateQueries({ queryKey: ['chats'] });
     });
     return off;
   }, [on, conversationId, queryClient, currentUser?._id, normalizeMessage]);
 
-  // ── Socket.IO: new message notification (personal room — always fires) ──
+  // ── Socket.IO: new message notification ──
   useEffect(() => {
     const off = on("new_message_notification", ({ conversationId: chatId, message }) => {
       const senderId = message.senderId?._id || message.senderId;
       if (senderId === currentUser?._id) return;
 
       const normalized = normalizeMessage(message);
+      if (!normalized) return;
 
-      // Add to local state immediately regardless of which chat is open
       setLocalMessages((prev) => {
         const existing = prev[chatId] || [];
-        const alreadyExists = existing.some((m) => m.id === normalized.id);
+        const alreadyExists = existing.some((m) => m?.id === normalized.id);
         if (alreadyExists) return prev;
         return {
-         ...prev,
+        ...prev,
           [chatId]: [...existing, normalized],
         };
       });
@@ -142,9 +139,9 @@ const MessagesPage = () => {
   useEffect(() => {
     const off = on("message_deleted", ({ messageId }) => {
       setLocalMessages((prev) => ({
-       ...prev,
+      ...prev,
         [conversationId]: (prev[conversationId] || []).filter(
-          (m) => m.id!== messageId
+          (m) => m?.id!== messageId
         ),
       }));
     });
@@ -155,19 +152,20 @@ const MessagesPage = () => {
   useEffect(() => {
     const off = on("message_reaction_updated", ({ messageId, reactions }) => {
       setLocalMessages((prev) => ({
-       ...prev,
+      ...prev,
         [conversationId]: (prev[conversationId] || []).map((m) =>
-          m.id === messageId? {...m, reactions } : m
+          m?.id === messageId? {...m, reactions } : m
         ),
       }));
     });
     return off;
   }, [on, conversationId]);
 
-  // ── Normalize backend conversation to UI shape ──
+  // ── Normalize backend conversation to UI shape - SAFER VERSION ──
   const normalizeConversation = (conv) => {
+    if (!conv) return null;
     const otherParticipant = conv.participants?.find(
-      (p) => p._id!== currentUser?._id
+      (p) => p?._id!== currentUser?._id
     );
     return {
       id: conv._id,
@@ -175,14 +173,14 @@ const MessagesPage = () => {
       name: conv.type === "group"? conv.name : otherParticipant?.fullName || "Unknown",
       avatar: conv.type === "group"? conv.coverUrl : otherParticipant?.avatarUrl,
       participants: (conv.participants || []).map((p) => ({
-        id: p._id,
-        name: p.fullName || p.email,
-        avatar: p.avatarUrl,
+        id: p?._id,
+        name: p?.fullName || p?.email || "Unknown",
+        avatar: p?.avatarUrl,
         role: "member",
-      })),
-      lastMessage: conv.lastMessage
-       ? {
-            text: conv.lastMessage.text,
+      })).filter(p => p.id), // remove null participants
+      lastMessage: conv.lastMessage && conv.lastMessage.timestamp // ← Check both exist
+     ? {
+            text: conv.lastMessage.text || "",
             timestamp: conv.lastMessage.timestamp,
             senderId: conv.lastMessage.senderId,
           }
@@ -193,40 +191,40 @@ const MessagesPage = () => {
   };
 
   const normalizedConversations = currentUser
-   ? conversations.map(normalizeConversation)
+  ? conversations.map(normalizeConversation).filter(Boolean) // ← filter out nulls
     : [];
 
   const activeConversation = normalizedConversations.find(
-    (c) => c.id === conversationId
+    (c) => c?.id === conversationId
   );
 
-  const activeMessages = localMessages[conversationId]
-   ? localMessages[conversationId]
-    : (messagesData?.messages || []).map(normalizeMessage);
+  const activeMessages = (localMessages[conversationId]
+  ? localMessages[conversationId]
+    : (messagesData?.messages || []).map(normalizeMessage)
+  ).filter(m => m && m.timestamp); // ← remove messages without timestamp
 
   // ── Contacts = all unique participants across conversations (excluding self) ──
   const contacts = normalizedConversations
-   .flatMap((c) => c.participants)
-   .filter(
+  .flatMap((c) => c?.participants || [])
+  .filter(
       (p, index, self) =>
-        p.id!== currentUser?._id &&
-        self.findIndex((u) => u.id === p.id) === index
+        p?.id && p.id!== currentUser?._id &&
+        self.findIndex((u) => u?.id === p.id) === index
     );
 
   const normalizedCurrentUser = currentUser
-   ? {
+  ? {
         id: currentUser._id,
         name: currentUser.fullName || currentUser.email,
         avatar: currentUser.avatarUrl,
       }
     : null;
 
-  // ── Send message mutation - FIXED ──
+  // ── Send message mutation ──
   const sendMutation = useMutation({
     mutationFn: ({ chatId, body, replyTo, file }) =>
       sendMessage(chatId, { body, replyTo, file }),
     onMutate: ({ body, replyTo }) => {
-      // Optimistically add message immediately so it shows in the UI
       const optimisticMsg = {
         id: `optimistic-${Date.now()}`,
         senderId: currentUser?._id,
@@ -242,28 +240,27 @@ const MessagesPage = () => {
         _optimistic: true,
       };
       setLocalMessages((prev) => ({
-       ...prev,
+      ...prev,
         [conversationId]: [...(prev[conversationId] || []), optimisticMsg],
       }));
       return { optimisticMsg };
     },
     onSuccess: (newMsg, _, context) => {
       const normalized = normalizeMessage(newMsg);
-      // Replace optimistic message with real one from server
+      if (!normalized) return;
       setLocalMessages((prev) => ({
-       ...prev,
+      ...prev,
         [conversationId]: (prev[conversationId] || []).map((m) =>
-          m.id === context?.optimisticMsg?.id? normalized : m
+          m?.id === context?.optimisticMsg?.id? normalized : m
         ),
       }));
       queryClient.invalidateQueries({ queryKey: ['chats'] });
     },
     onError: (error, _, context) => {
-      // Remove optimistic message on error + show alert
       setLocalMessages((prev) => ({
-       ...prev,
+      ...prev,
         [conversationId]: (prev[conversationId] || []).filter(
-          (m) => m.id!== context?.optimisticMsg?.id
+          (m) => m?.id!== context?.optimisticMsg?.id
         ),
       }));
       alert(getErrorMessage(error));
@@ -275,9 +272,9 @@ const MessagesPage = () => {
     mutationFn: (messageId) => deleteMessage(conversationId, messageId),
     onSuccess: (_, messageId) => {
       setLocalMessages((prev) => ({
-       ...prev,
+      ...prev,
         [conversationId]: (prev[conversationId] || []).filter(
-          (m) => m.id!== messageId
+          (m) => m?.id!== messageId
         ),
       }));
     },
@@ -320,7 +317,7 @@ const MessagesPage = () => {
   const handleForward = (message, targetConvId) => {
     sendMutation.mutate({
       chatId: targetConvId,
-      body: message.text,
+      body: message?.text || "",
       replyTo: null,
       file: null,
     });
@@ -394,7 +391,7 @@ const MessagesPage = () => {
   }
 
   return (
-    <div className="flex h- sticky p-2 top-0 overflow-hidden">
+    <div className="flex h-screen sticky p-2 top-0 overflow-hidden">
       <ConversationList
         conversations={normalizedConversations}
         currentUser={normalizedCurrentUser}
