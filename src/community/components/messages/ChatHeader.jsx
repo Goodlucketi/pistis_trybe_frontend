@@ -13,7 +13,6 @@ const ChatHeader = ({
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // ← GUARD: don't render if critical props missing
   if (!conversation ||!currentUser) return null;
 
   const isGroup = conversation.type === "group";
@@ -29,18 +28,25 @@ const ChatHeader = ({
  ? conversation.avatar || "/default-group.png"
     : otherUser?.avatar || "/default-avatar.png";
 
-  // ← SAFE: handle null timestamps and participants
+  // ← UPDATED: Real-time online status
   const getStatus = () => {
     if (conversation.isTyping) return "typing...";
     if (isGroup) return `${conversation.participants?.length || 0} members`;
+    
+    // Check online status first
     if (otherUser?.online) return "Active now";
     
-    // Safe lastSeen formatting
+    // Fall back to last seen
     if (otherUser?.lastSeen) {
       try {
         const date = new Date(otherUser.lastSeen);
         if (isNaN(date.getTime())) return "Offline";
-        return `Last seen ${formatDistanceToNow(date, { addSuffix: true })}`;
+        
+        // If seen within last 5 minutes, still show "Active now"
+        const diffMinutes = (Date.now() - date.getTime()) / 1000 / 60;
+        if (diffMinutes < 5) return "Active now";
+        
+        return `Active ${formatDistanceToNow(date, { addSuffix: true })}`;
       } catch {
         return "Offline";
       }
@@ -51,7 +57,7 @@ const ChatHeader = ({
   const handleSearch = (e) => {
     const query = e.target.value;
     setSearchQuery(query);
-    onSearch?.(query); // ← optional chaining
+    onSearch?.(query);
   };
 
   const handleHeaderClick = () => {
@@ -93,7 +99,7 @@ const ChatHeader = ({
           ) : (
             <>
               <h3 className="font-semibold text-gray-900 truncate">{displayName}</h3>
-              <p className="text-xs text-gray-500 truncate">
+              <p className={`text-xs truncate ${otherUser?.online? 'text-green-600 font-medium' : 'text-gray-500'}`}>
                 {getStatus()}
               </p>
             </>
