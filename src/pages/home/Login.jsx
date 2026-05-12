@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { GoogleLogin } from "@react-oauth/google";
-import { jwtDecode } from "jwt-decode";
 import { Link, useNavigate } from "react-router-dom";
 
 import AuthLayout from "../../auth/AuthLayout";
@@ -8,8 +7,7 @@ import AuthCard from "../../auth/AuthCard";
 import Input from "../../shared/Input";
 import Button from "../../shared/Btn";
 import useForm from "../../hooks/UseForm";
-
-import { loginUser } from "../../services/AuthService";
+import { loginUser, googleLogin } from "../../services/AuthService";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -20,9 +18,7 @@ const Login = () => {
     const errors = {};
     if (!values.email) errors.email = "Email is required";
     else if (!/\S+@\S+\.\S+/.test(values.email)) errors.email = "Email is invalid";
-    
     if (!values.password) errors.password = "Password is required";
-    else if (values.password.length < 6) errors.password = "Password must be 6+ characters";
     return errors;
   };
 
@@ -31,27 +27,32 @@ const Login = () => {
     validate
   );
 
-  // Check if form is valid: no errors + both fields have values
-  const isFormValid = 
-    values.email && 
-    values.password && 
-    Object.keys(errors).length === 0;
+  const isFormValid = values.email && values.password && Object.keys(errors).length === 0;
 
-  const handleGoogleSuccess = (credentialResponse) => {
+  const handleGoogleSuccess = async (credentialResponse) => {
     try {
-      const decoded = jwtDecode(credentialResponse.credential);
-      console.log("Google User:", decoded);
-      localStorage.setItem("user", JSON.stringify(decoded));
+      setLoading(true);
+      setServerError("");
+      
+      // Send credential to backend, not just decode it
+      const data = await googleLogin(credentialResponse.credential);
+      
+      if (data?.accessToken) {
+        localStorage.setItem("accessToken", data.accessToken);
+        localStorage.setItem("user", JSON.stringify(data.user));
+      }
+      
       navigate("/dashboard/feed");
     } catch (error) {
       console.error("Google Login Error:", error);
-      setServerError("Google login failed");
+      setServerError(error?.response?.data?.message || "Google login failed");
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleGoogleError = () => {
-    console.error("Google Sign-In Failed");
-    setServerError("Google login failed");
+    setServerError("Google sign-in was cancelled or failed");
   };
 
   const onSubmit = async () => {
@@ -61,11 +62,11 @@ const Login = () => {
       const data = await loginUser(values);
       if (data?.accessToken) {
         localStorage.setItem("accessToken", data.accessToken);
+        localStorage.setItem("user", JSON.stringify(data.user));
       }
-      // console.log("Login success:", data);
       navigate("/dashboard/feed");
     } catch (error) {
-      setServerError(error.message || "Login failed");
+      setServerError(error?.response?.data?.message || "Login failed");
     } finally {
       setLoading(false);
     }
@@ -74,7 +75,6 @@ const Login = () => {
   return (
     <AuthLayout>
       <AuthCard title="Sign In" message="Welcome back">
-        
         {serverError && (
           <div className="mb-4 text-sm text-red-500 text-center">
             {serverError}
@@ -90,7 +90,6 @@ const Login = () => {
             onChange={handleChange}
             error={errors.email}
           />
-
           <Input
             name="password"
             type="password"
@@ -99,7 +98,6 @@ const Login = () => {
             onChange={handleChange}
             error={errors.password}
           />
-
           <Button 
             type="submit" 
             loading={loading}
@@ -120,11 +118,16 @@ const Login = () => {
           <hr className="border-gray-300 w-full" />
         </div>
 
-        <GoogleLogin
-          onSuccess={handleGoogleSuccess}
-          onError={handleGoogleError}
-          useOneTap={false}
-        />
+        <div className="flex justify-center">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            text="signin_with"
+            shape="rectangular"
+            size="large"
+            width="100%"
+          />
+        </div>
 
         <p className="text-sm mt-6 text-gray-500 text-center">
           Don't have an account?{" "}

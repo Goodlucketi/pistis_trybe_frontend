@@ -1,31 +1,27 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { GoogleLogin } from "@react-oauth/google";
 
 import AuthLayout from "../../auth/AuthLayout";
 import AuthCard from "../../auth/AuthCard";
 import Input from "../../shared/Input";
 import Button from "../../shared/Btn";
 import useForm from "../../hooks/UseForm";
-
-import { GoogleLogin } from "@react-oauth/google";
-import { registerUser } from "../../services/AuthService";
+import { registerUser, googleRegister } from "../../services/AuthService";
 
 const Register = () => {
     const navigate = useNavigate();
-
     const [loading, setLoading] = useState(false);
     const [serverError, setServerError] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
 
     const validate = (values) => {
         const errors = {};
-
         if (!values.email) {
             errors.email = "Email is required";
         } else if (!/\S+@\S+\.\S+/.test(values.email)) {
             errors.email = "Email is invalid";
         }
-
         if (!values.password) {
             errors.password = "Password is required";
         } else if (values.password.length < 8) {
@@ -35,80 +31,72 @@ const Register = () => {
         } else if (!/[!@#$%^&*(),.?":{}|<>]/.test(values.password)) {
             errors.password = "Password must contain a special character";
         }
-
         return errors;
     };
 
     const { values, errors, handleChange, handleSubmit } = useForm(
-        {
-            email: "",
-            password: "",
-        },
+        { email: "", password: "" },
         validate
     );
 
-    // Check if form is valid: both fields filled + no errors
-    const isFormValid = 
-        values.email && 
-        values.password && 
-        Object.keys(errors).length === 0;
+    const isFormValid = values.email && values.password && Object.keys(errors).length === 0;
 
     const onSubmit = async () => {
         try {
             setLoading(true);
             setServerError("");
             setSuccessMessage("");
-
-            const payload = {
-                email: values.email,
-                password: values.password,
-            };
-
-            const data = await registerUser(payload);
+            const data = await registerUser(values);
             setSuccessMessage("Account created successfully!");
-
-            setTimeout(() => {
-                navigate("/login");
-            }, 1500);
-
-            console.log("Register success:", data);
+            setTimeout(() => navigate("/login"), 1500);
         } catch (error) {
-            setServerError(
-                error?.message || "Registration failed. Please try again."
-            );
+            setServerError(error?.response?.data?.message || "Registration failed");
         } finally {
             setLoading(false);
         }
     };
 
-    const handleSuccess = (response) => {
-        console.log('Google Sign-In Success:', response);
+    const handleGoogleSuccess = async (credentialResponse) => {
+        try {
+            setLoading(true);
+            setServerError("");
+            
+            const data = await googleRegister(credentialResponse.credential);
+            
+            if (data?.accessToken) {
+                localStorage.setItem("accessToken", data.accessToken);
+                localStorage.setItem("user", JSON.stringify(data.user));
+            }
+            
+            setSuccessMessage("Account created with Google!");
+            setTimeout(() => navigate("/dashboard/feed"), 1500);
+        } catch (error) {
+            console.error('Google Sign-Up Failed:', error);
+            setServerError(error?.response?.data?.message || "Google sign-up failed");
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleFailure = (response) => {
-        console.error('Google Sign-In Failed:', response);
+    const handleGoogleError = () => {
+        setServerError("Google sign-up was cancelled or failed");
     };
 
     return (
         <AuthLayout>
             <AuthCard title="Create Account" message="Let's get you started">
-
                 {serverError && (
                     <div className="mb-4 text-sm text-red-500 text-center">
                         {serverError}
                     </div>
                 )}
-
                 {successMessage && (
                     <div className="mb-4 text-sm text-green-600 text-center">
                         {successMessage}
                     </div>
                 )}
 
-                <form
-                    onSubmit={handleSubmit(onSubmit)}
-                    className="flex flex-col gap-3"
-                >
+                <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3">
                     <Input
                         name="email"
                         type="email"
@@ -117,7 +105,6 @@ const Register = () => {
                         error={errors.email}
                         placeholder="Enter your email"
                     />
-
                     <Input
                         name="password"
                         type="password"
@@ -126,7 +113,6 @@ const Register = () => {
                         error={errors.password}
                         placeholder="Create a password"
                     />
-
                     <p className="text-sm text-gray-500">
                         Password must be at least{" "}
                         <span className="font-semibold text-purple-900">8 characters</span>{" "}
@@ -134,7 +120,6 @@ const Register = () => {
                         <span className="font-semibold text-purple-900">number</span> and a{" "}
                         <span className="font-semibold text-purple-900">special character</span>
                     </p>
-
                     <Button 
                         type="submit" 
                         loading={loading}
@@ -151,11 +136,16 @@ const Register = () => {
                     <hr className="border-gray-300 border-t-1 w-full" />
                 </div>
 
-                <GoogleLogin
-                    onSuccess={handleSuccess}
-                    onError={handleFailure}
-                    useOneTap
-                />
+                <div className="flex justify-center">
+                    <GoogleLogin
+                        onSuccess={handleGoogleSuccess}
+                        onError={handleGoogleError}
+                        text="signup_with"
+                        shape="rectangular"
+                        size="large"
+                        width="100%"
+                    />
+                </div>
 
                 <p className="text-sm mt-6 text-gray-500">
                     Already have an account?{" "}

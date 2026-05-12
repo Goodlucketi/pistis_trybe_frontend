@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { format, isToday, isYesterday, isSameDay } from "date-fns";
+import { useState, useEffect, useRef } from "react";
 import ChatHeader from "./ChatHeader";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
@@ -23,39 +22,38 @@ const ChatWindow = ({
   const [replyTo, setReplyTo] = useState(null);
   const [forwardingMessage, setForwardingMessage] = useState(null);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
+  const messagesEndRef = useRef(null);
 
-  // ← GUARD: don't crash if props missing
-  if (!conversation ||!currentUser) return null;
+  if (!conversation || !currentUser) return null;
 
   const handleSend = ({ text, attachments, replyTo: replyId }) => {
     onSendMessage({ text, attachments, replyTo: replyId });
     setReplyTo(null);
   };
 
-  // ← SAFE: check conversation exists before updating
   const handleAddMembers = (newMembers) => {
-    if (!setConversations ||!conversation?.id) return;
+    if (!setConversations || !conversation?.id) return;
     setConversations(prev => prev.map(c =>
       c?.id === conversation.id
-      ? {...c, participants: [...(c.participants || []),...newMembers.map(m => ({...m, role: 'member' }))] }
+       ? {...c, participants: [...(c.participants || []), ...newMembers.map(m => ({...m, role: 'member' }))] }
         : c
     ));
   };
 
   const handleRemoveMember = (memberId) => {
-    if (!setConversations ||!conversation?.id) return;
+    if (!setConversations || !conversation?.id) return;
     setConversations(prev => prev.map(c =>
       c?.id === conversation.id
-      ? {...c, participants: (c.participants || []).filter(p => p?.id!== memberId) }
+       ? {...c, participants: (c.participants || []).filter(p => p?.id!== memberId) }
         : c
     ));
   };
 
   const handlePromoteAdmin = (memberId) => {
-    if (!setConversations ||!conversation?.id) return;
+    if (!setConversations || !conversation?.id) return;
     setConversations(prev => prev.map(c =>
       c?.id === conversation.id
-      ? {
+       ? {
            ...c,
            participants: (c.participants || []).map(p =>
              p?.id === memberId? {...p, role: 'admin' } : p
@@ -66,19 +64,19 @@ const ChatWindow = ({
   };
 
   const handleLeaveGroup = () => {
-    if (!setConversations ||!conversation?.id) return;
+    if (!setConversations || !conversation?.id) return;
     setConversations(prev => prev.filter(c => c?.id!== conversation.id));
     onBack?.();
   };
 
   const handleDeleteGroup = () => {
-    if (!setConversations ||!conversation?.id) return;
+    if (!setConversations || !conversation?.id) return;
     setConversations(prev => prev.filter(c => c?.id!== conversation.id));
     onBack?.();
   };
 
   const handleUpdateGroupName = (newName) => {
-    if (!setConversations ||!conversation?.id) return;
+    if (!setConversations || !conversation?.id) return;
     setConversations(prev => prev.map(c =>
       c?.id === conversation.id? {...c, name: newName } : c
     ));
@@ -92,13 +90,18 @@ const ChatWindow = ({
     console.log('Search:', query);
   };
 
-  // ← SAFE: filter out null/undefined messages
   const safeMessages = (messages || []).filter(m => m && m.id);
   const safeConversations = (allConversations || []).filter(c => c && c.id);
 
+  // Auto scroll to bottom on new messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [safeMessages.length]);
+
   return (
-    <div className="flex-1 flex flex-col h-full bg-gray-50 overflow-hidden">
-      <div className="flex-shrink-0">
+    <div className="flex flex-col h-full w-full bg-gray-50 overflow-hidden">
+      {/* Header - fixed height */}
+      <div className="shrink-0">
         <ChatHeader
           conversation={conversation}
           currentUser={currentUser}
@@ -109,17 +112,22 @@ const ChatWindow = ({
         />
       </div>
 
-      <MessageList
-        messages={safeMessages}
-        currentUser={currentUser}
-        conversation={conversation}
-        onReply={setReplyTo}
-        onReact={onReact}
-        onDelete={onDelete}
-        onForward={(msg) => setForwardingMessage(msg)}
-      />
+      {/* Messages - scrollable, takes all remaining space */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <MessageList
+          messages={safeMessages}
+          currentUser={currentUser}
+          conversation={conversation}
+          onReply={setReplyTo}
+          onReact={onReact}
+          onDelete={onDelete}
+          onForward={(msg) => setForwardingMessage(msg)}
+        />
+        <div ref={messagesEndRef} />
+      </div>
 
-      <div className="flex-shrink-0">
+      {/* Input - sticks to bottom, won't shrink, respects iOS safe area */}
+      <div className="shrink-0 bg-white border-t border-gray-200 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
         <MessageInput
           onSendMessage={handleSend}
           replyTo={replyTo}
@@ -139,7 +147,6 @@ const ChatWindow = ({
         />
       )}
 
-      {/* GROUP INFO MODAL */}
       {showGroupInfo && conversation?.type === 'group' && (
         <GroupInfoModal
           isOpen={showGroupInfo}

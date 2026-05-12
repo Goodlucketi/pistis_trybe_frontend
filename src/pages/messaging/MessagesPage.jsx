@@ -15,22 +15,19 @@ const MessagesPage = () => {
   const queryClient = useQueryClient();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [localMessages, setLocalMessages] = useState({});
-  const { joinConversation, leaveConversation, on, startTyping, stopTyping } = useSocket();
+  const { joinConversation, leaveConversation, on } = useSocket();
 
-  // ── Current user ──
   const { data: currentUser } = useQuery({
     queryKey: ['me'],
     queryFn: getMe,
   });
 
-  // ── Conversations list ──
   const { data: conversations = [], isLoading: chatsLoading } = useQuery({
     queryKey: ['chats'],
     queryFn: getChats,
-    refetchInterval: 30000, // refresh every 30s as fallback
+    refetchInterval: 30000,
   });
 
-  // ── Messages for active conversation ──
   const { data: messagesData } = useQuery({
     queryKey: ['messages', conversationId],
     queryFn: () => getMessages(conversationId),
@@ -38,7 +35,6 @@ const MessagesPage = () => {
     staleTime: 0,
   });
 
-  // ── Normalize backend message to UI shape ──
   const normalizeMessage = useCallback((msg) => {
     if (!msg) return null;
     return {
@@ -48,7 +44,7 @@ const MessagesPage = () => {
       senderAvatar: msg.senderId?.avatarUrl || null,
       text: msg.body || "",
       attachments: msg.mediaUrl? [{ id: msg._id, url: msg.mediaUrl, type: "image/jpeg", name: "attachment" }] : [],
-      timestamp: msg.createdAt || msg.timestamp || new Date().toISOString(), // ← fallback if missing
+      timestamp: msg.createdAt || msg.timestamp || new Date().toISOString(),
       status: msg.isRead? "read" : "sent",
       reactions: msg.reactions || {},
       replyTo: msg.replyTo || null,
@@ -56,24 +52,20 @@ const MessagesPage = () => {
     };
   }, []);
 
-  // Sync fetched messages into localMessages — only seed, never overwrite local additions
   useEffect(() => {
     if (!messagesData?.messages ||!conversationId) return;
     setLocalMessages((prev) => {
-      const fetched = messagesData.messages
-       .map(normalizeMessage)
-       .filter(Boolean); // ← remove nulls
+      const fetched = messagesData.messages.map(normalizeMessage).filter(Boolean);
       const existing = prev[conversationId] || [];
       const fetchedIds = new Set(fetched.map((m) => m.id));
       const localOnly = existing.filter((m) =>!fetchedIds.has(m?.id));
       return {
-      ...prev,
+       ...prev,
         [conversationId]: [...fetched,...localOnly],
       };
     });
   }, [messagesData, conversationId, normalizeMessage]);
 
-  // ── Socket.IO: join/leave conversation room ──
   useEffect(() => {
     if (!conversationId) return;
     joinConversation(conversationId);
@@ -81,7 +73,6 @@ const MessagesPage = () => {
     return () => leaveConversation(conversationId);
   }, [conversationId, joinConversation, leaveConversation, queryClient]);
 
-  // ── Socket.IO: receive new messages in real time ──
   useEffect(() => {
     const off = on("receive_message", (message) => {
       const chatId = message.chatId?.toString() || conversationId;
@@ -100,7 +91,7 @@ const MessagesPage = () => {
         const alreadyExists = existing.some((m) => m?.id === normalized.id);
         if (alreadyExists) return prev;
         return {
-        ...prev,
+         ...prev,
           [chatId]: [...existing, normalized],
         };
       });
@@ -111,7 +102,6 @@ const MessagesPage = () => {
     return off;
   }, [on, conversationId, queryClient, currentUser?._id, normalizeMessage]);
 
-  // ── Socket.IO: new message notification ──
   useEffect(() => {
     const off = on("new_message_notification", ({ conversationId: chatId, message }) => {
       const senderId = message.senderId?._id || message.senderId;
@@ -125,7 +115,7 @@ const MessagesPage = () => {
         const alreadyExists = existing.some((m) => m?.id === normalized.id);
         if (alreadyExists) return prev;
         return {
-        ...prev,
+         ...prev,
           [chatId]: [...existing, normalized],
         };
       });
@@ -135,24 +125,20 @@ const MessagesPage = () => {
     return off;
   }, [on, currentUser?._id, queryClient, normalizeMessage]);
 
-  // ── Socket.IO: message deleted ──
   useEffect(() => {
     const off = on("message_deleted", ({ messageId }) => {
       setLocalMessages((prev) => ({
-      ...prev,
-        [conversationId]: (prev[conversationId] || []).filter(
-          (m) => m?.id!== messageId
-        ),
+       ...prev,
+        [conversationId]: (prev[conversationId] || []).filter((m) => m?.id!== messageId),
       }));
     });
     return off;
   }, [on, conversationId]);
 
-  // ── Socket.IO: reaction updated ──
   useEffect(() => {
     const off = on("message_reaction_updated", ({ messageId, reactions }) => {
       setLocalMessages((prev) => ({
-      ...prev,
+       ...prev,
         [conversationId]: (prev[conversationId] || []).map((m) =>
           m?.id === messageId? {...m, reactions } : m
         ),
@@ -161,12 +147,9 @@ const MessagesPage = () => {
     return off;
   }, [on, conversationId]);
 
-  // ── Normalize backend conversation to UI shape - SAFER VERSION ──
   const normalizeConversation = (conv) => {
     if (!conv) return null;
-    const otherParticipant = conv.participants?.find(
-      (p) => p?._id!== currentUser?._id
-    );
+    const otherParticipant = conv.participants?.find((p) => p?._id!== currentUser?._id);
     return {
       id: conv._id,
       type: conv.type || "direct",
@@ -177,9 +160,9 @@ const MessagesPage = () => {
         name: p?.fullName || p?.email || "Unknown",
         avatar: p?.avatarUrl,
         role: "member",
-      })).filter(p => p.id), // remove null participants
-      lastMessage: conv.lastMessage && conv.lastMessage.timestamp // ← Check both exist
-     ? {
+      })).filter(p => p.id),
+      lastMessage: conv.lastMessage && conv.lastMessage.timestamp
+       ? {
             text: conv.lastMessage.text || "",
             timestamp: conv.lastMessage.timestamp,
             senderId: conv.lastMessage.senderId,
@@ -191,36 +174,32 @@ const MessagesPage = () => {
   };
 
   const normalizedConversations = currentUser
-  ? conversations.map(normalizeConversation).filter(Boolean) // ← filter out nulls
+   ? conversations.map(normalizeConversation).filter(Boolean)
     : [];
 
-  const activeConversation = normalizedConversations.find(
-    (c) => c?.id === conversationId
-  );
+  const activeConversation = normalizedConversations.find((c) => c?.id === conversationId);
 
   const activeMessages = (localMessages[conversationId]
-  ? localMessages[conversationId]
+   ? localMessages[conversationId]
     : (messagesData?.messages || []).map(normalizeMessage)
-  ).filter(m => m && m.timestamp); // ← remove messages without timestamp
+  ).filter(m => m && m.timestamp);
 
-  // ── Contacts = all unique participants across conversations (excluding self) ──
   const contacts = normalizedConversations
-  .flatMap((c) => c?.participants || [])
-  .filter(
+   .flatMap((c) => c?.participants || [])
+   .filter(
       (p, index, self) =>
         p?.id && p.id!== currentUser?._id &&
         self.findIndex((u) => u?.id === p.id) === index
     );
 
   const normalizedCurrentUser = currentUser
-  ? {
+   ? {
         id: currentUser._id,
         name: currentUser.fullName || currentUser.email,
         avatar: currentUser.avatarUrl,
       }
     : null;
 
-  // ── Send message mutation ──
   const sendMutation = useMutation({
     mutationFn: ({ chatId, body, replyTo, file }) =>
       sendMessage(chatId, { body, replyTo, file }),
@@ -240,7 +219,7 @@ const MessagesPage = () => {
         _optimistic: true,
       };
       setLocalMessages((prev) => ({
-      ...prev,
+       ...prev,
         [conversationId]: [...(prev[conversationId] || []), optimisticMsg],
       }));
       return { optimisticMsg };
@@ -249,7 +228,7 @@ const MessagesPage = () => {
       const normalized = normalizeMessage(newMsg);
       if (!normalized) return;
       setLocalMessages((prev) => ({
-      ...prev,
+       ...prev,
         [conversationId]: (prev[conversationId] || []).map((m) =>
           m?.id === context?.optimisticMsg?.id? normalized : m
         ),
@@ -258,7 +237,7 @@ const MessagesPage = () => {
     },
     onError: (error, _, context) => {
       setLocalMessages((prev) => ({
-      ...prev,
+       ...prev,
         [conversationId]: (prev[conversationId] || []).filter(
           (m) => m?.id!== context?.optimisticMsg?.id
         ),
@@ -267,28 +246,23 @@ const MessagesPage = () => {
     },
   });
 
-  // ── Delete message mutation ──
   const deleteMutation = useMutation({
     mutationFn: (messageId) => deleteMessage(conversationId, messageId),
     onSuccess: (_, messageId) => {
       setLocalMessages((prev) => ({
-      ...prev,
-        [conversationId]: (prev[conversationId] || []).filter(
-          (m) => m?.id!== messageId
-        ),
+       ...prev,
+        [conversationId]: (prev[conversationId] || []).filter((m) => m?.id!== messageId),
       }));
     },
     onError: (error) => alert(getErrorMessage(error)),
   });
 
-  // ── React to message mutation ──
   const reactMutation = useMutation({
     mutationFn: ({ messageId, emoji }) =>
       reactToMessage(conversationId, messageId, emoji),
     onError: (error) => alert(getErrorMessage(error)),
   });
 
-  // ── Create group chat mutation ──
   const createGroupMutation = useMutation({
     mutationFn: ({ name, participantIds }) =>
       createGroupChat({ name, participantIds }),
@@ -299,7 +273,6 @@ const MessagesPage = () => {
     onError: (error) => alert(getErrorMessage(error)),
   });
 
-  // ── Handlers ──
   const handleSendMessage = ({ text, attachments = [], replyTo = null }) => {
     if (!conversationId) return;
     const file = attachments?.[0] || null;
@@ -355,9 +328,10 @@ const MessagesPage = () => {
     );
   }
 
+  // ── MOBILE VIEW - FIXED ──
   if (isMobile) {
     return (
-      <div className="h-[calc(100vh-4rem)] fixed overflow-scroll w-full left-0">
+      <div className="h- w-full flex flex-col overflow-hidden">
         {conversationId && activeConversation? (
           <ChatWindow
             conversation={activeConversation}
@@ -390,8 +364,9 @@ const MessagesPage = () => {
     );
   }
 
+  // ── DESKTOP VIEW ──
   return (
-    <div className="flex h-screen sticky p-2 top-0 overflow-hidden">
+    <div className="flex h- p-2 overflow-hidden">
       <ConversationList
         conversations={normalizedConversations}
         currentUser={normalizedCurrentUser}

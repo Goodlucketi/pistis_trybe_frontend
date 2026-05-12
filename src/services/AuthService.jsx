@@ -14,6 +14,16 @@ export const registerUser = async (data) => {
   return response.data;
 };
 
+export const googleLogin = async (credential) => {
+  const res = await axios.post(`/auth/google`, { credential });
+  return res.data; // should return { accessToken, user }
+};
+
+export const googleRegister = async (credential) => {
+  const res = await axios.post(`/auth/google-register`, { credential });
+  return res.data;
+};
+
 export const forgotPwd = async (data) => {
   const response = await api.post("/auth/forgot-password", data);
   return response.data;

@@ -3,16 +3,8 @@ import MessageBubble from "./MessageBubble";
 import { format, isToday, isYesterday, isSameDay } from "date-fns";
 
 const MessageList = ({ messages = [], currentUser, onReply, onReact, onForward, onDelete, conversation }) => {
-  const bottomRef = useRef(null);
-
-  // ← SAFE: filter out null/undefined messages first
   const safeMessages = (messages || []).filter(m => m && m.id);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [safeMessages]);
-
-  // ← SAFE: handle null/invalid dates
   const formatDateSeparator = (date) => {
     if (!date) return "";
     try {
@@ -26,24 +18,22 @@ const MessageList = ({ messages = [], currentUser, onReply, onReact, onForward, 
 
   let lastDate = null;
 
-  if (!currentUser) return null; // ← guard
+  if (!currentUser) return null;
 
   return (
-    <div className="flex-1 overflow-y-auto py-2">
+    <div className="py-2">
       {safeMessages.length === 0? (
-        <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+        <div className="flex items-center justify-center h-64 text-gray-400 text-sm">
           No messages yet
         </div>
       ) : (
         safeMessages.map((msg, idx) => {
-          // ← SAFE: skip if no timestamp
           const msgTimestamp = msg?.timestamp;
           if (!msgTimestamp) return null;
 
           let msgDate;
           try {
             msgDate = new Date(msgTimestamp);
-            // Check if date is valid
             if (isNaN(msgDate.getTime())) return null;
           } catch {
             return null;
@@ -76,7 +66,6 @@ const MessageList = ({ messages = [], currentUser, onReply, onReact, onForward, 
           );
         })
       )}
-      <div ref={bottomRef} />
     </div>
   );
 };
