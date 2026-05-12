@@ -266,7 +266,6 @@ const MessagesPage = () => {
           (m) => m.id !== context?.optimisticMsg?.id
         ),
       }));
-      alert(getErrorMessage(error));
     },
     onError: (error) => alert(getErrorMessage(error)),
   });
