@@ -3,14 +3,43 @@ import { formatDistanceToNow } from "date-fns";
 import { Users } from "lucide-react";
 
 const ConversationItem = ({ conversation, currentUser, isActive }) => {
+  if (!conversation ||!currentUser) return null; // ← guard against null props
+
   const isGroup = conversation.type === "group";
-  const otherUser =!isGroup? conversation.participants.find(p => p.id!== currentUser.id) : null;
+  const otherUser =!isGroup
+   ? conversation.participants?.find(p => p?.id!== currentUser.id)
+    : null;
 
-  const displayName = isGroup? conversation.name : otherUser.name;
-  const displayAvatar = isGroup? conversation.avatar : otherUser.avatar;
-  const isOnline =!isGroup && otherUser.online;
+  const displayName = isGroup
+   ? conversation.name || "Group Chat"
+    : otherUser?.name || "Unknown User";
 
-  const { lastMessage, unreadCount } = conversation;
+  const displayAvatar = isGroup
+   ? conversation.avatar || "/default-group.png"
+    : otherUser?.avatar || "/default-avatar.png";
+
+  const isOnline =!isGroup && otherUser?.online;
+
+  const { lastMessage, unreadCount = 0 } = conversation;
+
+  // ← Safe time formatter
+  const getTimeAgo = () => {
+    if (!lastMessage?.timestamp) return "";
+    try {
+      return formatDistanceToNow(new Date(lastMessage.timestamp), {
+        addSuffix: true
+      });
+    } catch {
+      return "";
+    }
+  };
+
+  // ← Safe preview text
+  const getPreviewText = () => {
+    if (!lastMessage?.text) return "No messages yet";
+    const prefix = lastMessage.senderId === currentUser.id? "You: " : "";
+    return prefix + lastMessage.text;
+  };
 
   return (
     <Link
@@ -38,13 +67,12 @@ const ConversationItem = ({ conversation, currentUser, isActive }) => {
         <div className="flex justify-between items-center mb-1">
           <h3 className="font-semibold text-gray-900 truncate">{displayName}</h3>
           <span className="text-xs text-gray-500 flex-shrink-0">
-            {formatDistanceToNow(new Date(lastMessage.timestamp), { addSuffix: true })}
+            {getTimeAgo()}
           </span>
         </div>
         <div className="flex justify-between items-center">
           <p className={`text-sm truncate ${unreadCount? "text-gray-900 font-medium" : "text-gray-500"}`}>
-            {lastMessage.senderId === currentUser.id? "You: " : ""}
-            {lastMessage.text}
+            {getPreviewText()}
           </p>
           {unreadCount > 0 && (
             <span className="ml-2 bg-purple-600 text-white text-xs font-bold rounded-full min-w- h-5 px-1.5 flex items-center justify-center flex-shrink-0">
