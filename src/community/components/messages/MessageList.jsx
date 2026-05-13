@@ -27,7 +27,7 @@ const MessageList = ({ messages = [], currentUser, onReply, onReact, onForward, 
           No messages yet
         </div>
       ) : (
-        safeMessages.map((msg, idx) => {
+        safeMessages.map((msg) => {
           const msgTimestamp = msg?.timestamp;
           if (!msgTimestamp) return null;
 

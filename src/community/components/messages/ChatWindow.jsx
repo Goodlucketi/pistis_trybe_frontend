@@ -22,9 +22,28 @@ const ChatWindow = ({
   const [replyTo, setReplyTo] = useState(null);
   const [forwardingMessage, setForwardingMessage] = useState(null);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const messagesEndRef = useRef(null);
 
-  if (!conversation || !currentUser) return null;
+  if (!currentUser) return null;
+
+  useEffect(() => {
+    if (!isMobile ||!window.visualViewport) return;
+
+    const handleResize = () => {
+      const viewport = window.visualViewport;
+      const heightDiff = window.innerHeight - viewport.height;
+      setKeyboardHeight(heightDiff > 150? heightDiff : 0);
+    };
+
+    window.visualViewport.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.visualViewport.removeEventListener('resize', handleResize);
+  }, [isMobile]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages.length]);
 
   const handleSend = ({ text, attachments, replyTo: replyId }) => {
     onSendMessage({ text, attachments, replyTo: replyId });
@@ -32,16 +51,16 @@ const ChatWindow = ({
   };
 
   const handleAddMembers = (newMembers) => {
-    if (!setConversations || !conversation?.id) return;
+    if (!setConversations ||!conversation?.id) return;
     setConversations(prev => prev.map(c =>
       c?.id === conversation.id
-       ? {...c, participants: [...(c.participants || []), ...newMembers.map(m => ({...m, role: 'member' }))] }
+       ? {...c, participants: [...(c.participants || []),...newMembers.map(m => ({...m, role: 'member' }))] }
         : c
     ));
   };
 
   const handleRemoveMember = (memberId) => {
-    if (!setConversations || !conversation?.id) return;
+    if (!setConversations ||!conversation?.id) return;
     setConversations(prev => prev.map(c =>
       c?.id === conversation.id
        ? {...c, participants: (c.participants || []).filter(p => p?.id!== memberId) }
@@ -50,33 +69,33 @@ const ChatWindow = ({
   };
 
   const handlePromoteAdmin = (memberId) => {
-    if (!setConversations || !conversation?.id) return;
+    if (!setConversations ||!conversation?.id) return;
     setConversations(prev => prev.map(c =>
       c?.id === conversation.id
        ? {
            ...c,
-           participants: (c.participants || []).map(p =>
-             p?.id === memberId? {...p, role: 'admin' } : p
-           )
-         }
+            participants: (c.participants || []).map(p =>
+              p?.id === memberId? {...p, role: 'admin' } : p
+            )
+          }
         : c
     ));
   };
 
   const handleLeaveGroup = () => {
-    if (!setConversations || !conversation?.id) return;
+    if (!setConversations ||!conversation?.id) return;
     setConversations(prev => prev.filter(c => c?.id!== conversation.id));
     onBack?.();
   };
 
   const handleDeleteGroup = () => {
-    if (!setConversations || !conversation?.id) return;
+    if (!setConversations ||!conversation?.id) return;
     setConversations(prev => prev.filter(c => c?.id!== conversation.id));
     onBack?.();
   };
 
   const handleUpdateGroupName = (newName) => {
-    if (!setConversations || !conversation?.id) return;
+    if (!setConversations ||!conversation?.id) return;
     setConversations(prev => prev.map(c =>
       c?.id === conversation.id? {...c, name: newName } : c
     ));
@@ -86,48 +105,47 @@ const ChatWindow = ({
     console.log('Update avatar clicked');
   };
 
-  const handleSearch = (query) => {
-    console.log('Search:', query);
-  };
-
   const safeMessages = (messages || []).filter(m => m && m.id);
   const safeConversations = (allConversations || []).filter(c => c && c.id);
 
-  // Auto scroll to bottom on new messages
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [safeMessages.length]);
-
   return (
-    <div className="flex flex-col h-full w-full bg-gray-50 overflow-hidden">
-      {/* Header - fixed height */}
-      <div className="shrink-0">
-        <ChatHeader
-          conversation={conversation}
-          currentUser={currentUser}
-          onBack={onBack}
-          isMobile={isMobile}
-          onSearch={handleSearch}
-          onOpenGroupInfo={() => setShowGroupInfo(true)}
-        />
-      </div>
+    <div className="flex flex-col h-full w-full bg-gray-50 overflow-hidden relative">
+      {conversation && (
+        <>
+          <div className="shrink-0 z-10">
+            <ChatHeader
+              conversation={conversation}
+              currentUser={currentUser}
+              onBack={onBack}
+              isMobile={isMobile}
+              onSearch={() => {}}
+              onOpenGroupInfo={() => setShowGroupInfo(true)}
+            />
+          </div>
 
-      {/* Messages - scrollable, takes all remaining space */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        <MessageList
-          messages={safeMessages}
-          currentUser={currentUser}
-          conversation={conversation}
-          onReply={setReplyTo}
-          onReact={onReact}
-          onDelete={onDelete}
-          onForward={(msg) => setForwardingMessage(msg)}
-        />
-        <div ref={messagesEndRef} />
-      </div>
+          <div className="flex-1 overflow-y-auto overflow-x-hidden pb-24">
+            <MessageList
+              messages={safeMessages}
+              currentUser={currentUser}
+              conversation={conversation}
+              onReply={setReplyTo}
+              onReact={onReact}
+              onDelete={onDelete}
+              onForward={(msg) => setForwardingMessage(msg)}
+            />
+            <div ref={messagesEndRef} />
+          </div>
+        </>
+      )}
 
-      {/* Input - sticks to bottom, won't shrink, respects iOS safe area */}
-      <div className="shrink-0 bg-white border-t border-gray-200 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+      <div
+        className="fixed left-0 right-0 bg-white border-t border-gray-200 p-3 z-20 transition-all duration-200"
+        style={{
+          bottom: isMobile
+           ? `calc(${keyboardHeight}px + env(safe-area-inset-bottom))`
+            : '0px'
+        }}
+      >
         <MessageInput
           onSendMessage={handleSend}
           replyTo={replyTo}

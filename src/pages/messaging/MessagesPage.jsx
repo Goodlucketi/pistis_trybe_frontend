@@ -322,18 +322,18 @@ const MessagesPage = () => {
 
   if (!normalizedCurrentUser) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-">
         <div className="w-8 h-8 border-4 border-[#401667] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
-  // ── MOBILE VIEW - FIXED ──
   if (isMobile) {
     return (
       <div className="h- w-full flex flex-col overflow-hidden">
         {conversationId && activeConversation? (
           <ChatWindow
+            key={activeConversation.id}
             conversation={activeConversation}
             messages={activeMessages}
             currentUser={normalizedCurrentUser}
@@ -364,7 +364,6 @@ const MessagesPage = () => {
     );
   }
 
-  // ── DESKTOP VIEW ──
   return (
     <div className="flex h- p-2 overflow-hidden">
       <ConversationList
@@ -379,6 +378,7 @@ const MessagesPage = () => {
       />
       {activeConversation? (
         <ChatWindow
+          key={activeConversation.id}
           conversation={activeConversation}
           messages={activeMessages}
           currentUser={normalizedCurrentUser}

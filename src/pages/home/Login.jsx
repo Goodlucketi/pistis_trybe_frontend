@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { GoogleLogin } from "@react-oauth/google";
 import { Link, useNavigate } from "react-router-dom";
-
 import AuthLayout from "../../auth/AuthLayout";
 import AuthCard from "../../auth/AuthCard";
 import Input from "../../shared/Input";
@@ -33,19 +32,10 @@ const Login = () => {
     try {
       setLoading(true);
       setServerError("");
-      
-      // Send credential to backend, not just decode it
-      const data = await googleLogin(credentialResponse.credential);
-      
-      if (data?.accessToken) {
-        localStorage.setItem("accessToken", data.accessToken);
-        localStorage.setItem("user", JSON.stringify(data.user));
-      }
-      
+      await googleLogin(credentialResponse.credential);
       navigate("/dashboard/feed");
     } catch (error) {
-      console.error("Google Login Error:", error);
-      setServerError(error?.response?.data?.message || "Google login failed");
+      setServerError(error?.message || "Google login failed");
     } finally {
       setLoading(false);
     }
@@ -59,14 +49,10 @@ const Login = () => {
     try {
       setLoading(true);
       setServerError("");
-      const data = await loginUser(values);
-      if (data?.accessToken) {
-        localStorage.setItem("accessToken", data.accessToken);
-        localStorage.setItem("user", JSON.stringify(data.user));
-      }
+      await loginUser(values);
       navigate("/dashboard/feed");
     } catch (error) {
-      setServerError(error?.response?.data?.message || "Login failed");
+      setServerError(error?.message || "Login failed. Please check your credentials.");
     } finally {
       setLoading(false);
     }
@@ -76,34 +62,17 @@ const Login = () => {
     <AuthLayout>
       <AuthCard title="Sign In" message="Welcome back">
         {serverError && (
-          <div className="mb-4 text-sm text-red-500 text-center">
-            {serverError}
-          </div>
+          <div className="mb-4 text-sm text-red-500 text-center">{serverError}</div>
         )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
-          <Input
-            name="email"
-            type="email"
-            placeholder="Email Address"
-            value={values.email}
-            onChange={handleChange}
-            error={errors.email}
-          />
-          <Input
-            name="password"
-            type="password"
-            placeholder="Password"
-            value={values.password}
-            onChange={handleChange}
-            error={errors.password}
-          />
-          <Button 
-            type="submit" 
-            loading={loading}
+          <Input name="email" type="email" placeholder="Email Address"
+            value={values.email} onChange={handleChange} error={errors.email} />
+          <Input name="password" type="password" placeholder="Password"
+            value={values.password} onChange={handleChange} error={errors.password} />
+          <Button type="submit" loading={loading}
             variant={isFormValid && !loading ? "active" : "primary"}
-            disabled={!isFormValid || loading}
-          >
+            disabled={!isFormValid || loading}>
             Sign In
           </Button>
         </form>
@@ -119,22 +88,14 @@ const Login = () => {
         </div>
 
         <div className="flex justify-center">
-          <GoogleLogin
-            onSuccess={handleGoogleSuccess}
-            onError={handleGoogleError}
-            text="signin_with"
-            shape="rectangular"
-            size="large"
-            width="100%"
-          />
+          <GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleError}
+            text="signin_with" shape="rectangular" size="large" width="100%" />
         </div>
 
         <p className="text-sm mt-6 text-gray-500 text-center">
           Don't have an account?{" "}
-          <span
-            onClick={() => navigate("/register")}
-            className="text-purple-900 hover:underline cursor-pointer font-medium"
-          >
+          <span onClick={() => navigate("/register")}
+            className="text-purple-900 hover:underline cursor-pointer font-medium">
             Sign Up
           </span>
         </p>

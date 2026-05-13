@@ -14,15 +14,19 @@ export const registerUser = async (data) => {
   return response.data;
 };
 
-export const googleLogin = async (credential) => {
-  const res = await axios.post(`/auth/google`, { credential });
-  return res.data; // should return { accessToken, user }
+// Single endpoint handles both Google login and register
+export const googleAuth = async (credential) => {
+  const response = await api.post("/auth/google", { credential });
+  const { accessToken, user } = response.data.data;
+  if (accessToken) localStorage.setItem("accessToken", accessToken);
+  if (user) localStorage.setItem("user", JSON.stringify(user));
+  return response.data.data;
 };
+ 
+// Keep these as aliases so Login.jsx and Register.jsx work without changes
+export const googleLogin = googleAuth;
+export const googleRegister = googleAuth;
 
-export const googleRegister = async (credential) => {
-  const res = await axios.post(`/auth/google-register`, { credential });
-  return res.data;
-};
 
 export const forgotPwd = async (data) => {
   const response = await api.post("/auth/forgot-password", data);
