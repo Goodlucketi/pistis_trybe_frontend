@@ -1,14 +1,55 @@
-import React from "react";
-import { Link } from "react-router-dom";
-import { User } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { User, MoreVertical, Pencil, Settings, LogOut } from "lucide-react";
+import { logoutUser } from "../../../services/AuthService";
+
 
 export default function ProfileTopBlock({ user }) {
   const isEmpty = !user;
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef(null);
+  const navigate = useNavigate();
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setShowMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleLogout = () => {
+    logoutUser();
+    navigate("/login");
+    setShowMenu(false);
+  };
+
+  const menuItems = [
+    {
+      label: isEmpty ? "Create Profile" : "Edit",
+      icon: Pencil,
+      to: "/dashboard/profile/edit",
+    },
+    {
+      label: "Settings",
+      icon: Settings,
+      to: "/dashboard/profile/settings",
+    },
+    {
+      label: "Log Out",
+      icon: LogOut,
+      onClick: handleLogout,
+      danger: true,
+    },
+  ];
 
   return (
     <div className="w-full bg-[#fff] rounded-2xl flex justify-between items-start gap-4">
       {/* LEFT SIDE */}
-      <div className="flex flex-col gap-4 sm:gap-6 min-w-0">
+      <div className="flex flex-col gap-4 sm:gap-6 min-w-0 flex-1">
         {/* Avatar */}
         <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gray-200 flex items-center justify-center shrink-0 overflow-hidden">
           {!isEmpty && user?.avatar ? (
@@ -28,7 +69,7 @@ export default function ProfileTopBlock({ user }) {
           </h2>
           {!isEmpty && !user.name && (
             <p className="text-xs text-[#401667] mt-1">
-              👉 Tap <strong>Edit</strong> to add your name and bio
+              👉 Tap the menu to add your name and bio
             </p>
           )}
 
@@ -61,19 +102,57 @@ export default function ProfileTopBlock({ user }) {
         </div>
       </div>
 
-      {/* RIGHT SIDE BUTTONS */}
-      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 shrink-0">
-        <Link to="/dashboard/profile/settings">
-          <button className="w-full px-3 sm:px-5 py-2 rounded-xl border border-gray-300 bg-white text-xs sm:text-sm font-medium hover:bg-gray-50 transition whitespace-nowrap">
-            Settings
-          </button>
-        </Link>
+      {/* RIGHT SIDE - 3 DOT MENU */}
+      <div className="relative shrink-0" ref={menuRef}>
+        <button
+          onClick={() => setShowMenu(!showMenu)}
+          className="p-2 hover:bg-gray-100 rounded-full transition group relative"
+          aria-label="Profile options"
+        >
+          <MoreVertical className="w-5 h-5 text-gray-600" />
+          {/* Tooltip on hover - desktop only */}
+          <span className="hidden md:block absolute -top-8 right-0 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap">
+            Options
+          </span>
+        </button>
 
-        <Link to="/dashboard/profile/edit">
-          <button className="w-full px-3 sm:px-5 py-2 rounded-xl bg-[#401667] hover:scale-103 transition text-white text-xs sm:text-sm font-medium whitespace-nowrap">
-            {isEmpty ? "Create" : "Edit"}
-          </button>
-        </Link>
+        {showMenu && (
+          <div className="absolute right-0 top-10 w-30 bg-white border border-gray-200 rounded-xl shadow-md z-20 py-1">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              const baseClasses = `w-full flex items-center gap-3 px-3 py-2 text-sm transition ${
+                item.danger
+                  ? "text-red-600 hover:bg-red-50"
+                  : "text-gray-700 hover:bg-gray-50"
+              }`;
+
+              if (item.to) {
+                return (
+                  <Link
+                    key={item.label}
+                    to={item.to}
+                    onClick={() => setShowMenu(false)}
+                    className={baseClasses}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {item.label}
+                  </Link>
+                );
+              }
+
+              return (
+                <button
+                  key={item.label}
+                  onClick={item.onClick}
+                  className={baseClasses}
+                >
+                  <Icon className="w-4 h-4" />
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
