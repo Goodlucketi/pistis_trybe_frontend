@@ -24,3 +24,10 @@ export const getMyGroups = async () => {
   const response = await api.get("/users/me/groups");
   return response.data.data;
 };
+
+export const createGroup = async (formData) => {
+  const response = await api.post("/groups", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return response.data.data;
+};
