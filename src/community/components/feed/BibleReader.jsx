@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
   BookOpen, BookMarked, StickyNote, ChevronDown, ChevronUp,
   Trash2, Share2, Plus, X, Check, ChevronLeft, ChevronRight,
-  Calendar
+  Calendar, Heart
 } from "lucide-react";
 import { BIBLE_BOOKS, READING_PLANS, TRANSLATIONS, STREAM_COLORS } from "../../store/readingPlans";
 import { getNotes, createNote, deleteNote, shareNoteToFeed } from "../../../services/NoteService";
@@ -18,9 +19,36 @@ const fetchPassage = async ({ book, chapter, translation }) => {
   return data;
 };
 
+// Free devotional API
+const fetchDailyDevotional = async () => {
+  const { data } = await axios.get('https://beta.ourmanna.com/api/v1/get/?format=json&order=daily');
+  return {
+    verse: data.verse.details.text,
+    reference: data.verse.details.reference,
+    version: data.verse.details.version,
+    devotional: data.verse.notice, // short devotional text
+    date: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+  };
+};
+
 export default function BibleReader() {
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState("read");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  // Read tab from URL:?tab=devotional
+  const [tab, setTab] = useState(searchParams.get('tab') || "read");
+
+  // Sync tab with URL
+  useEffect(() => {
+    setSearchParams({ tab }, { replace: true });
+  }, [tab, setSearchParams]);
+
+  // Listen for URL changes from outside
+  useEffect(() => {
+    const urlTab = searchParams.get('tab');
+    if (urlTab && urlTab!== tab) setTab(urlTab);
+  }, [searchParams]);
 
   // Reader state
   const [selectedBook, setSelectedBook] = useState("John");
@@ -44,17 +72,26 @@ export default function BibleReader() {
   const currentBook = BIBLE_BOOKS.find((b) => b.name === selectedBook);
   const totalChapters = currentBook?.chapters || 1;
 
+  // Devotional query
+  const { data: devotional, isLoading: devoLoading } = useQuery({
+    queryKey: ["devotional-daily"],
+    queryFn: fetchDailyDevotional,
+    staleTime: 1000 * 60 * 60 * 6, // 6 hours - devotionals change daily
+    enabled: tab === "devotional",
+  });
+
   const { data: passage, isLoading, error: passageError } = useQuery({
     queryKey: ["bible", selectedBook, selectedChapter, translation],
     queryFn: () => fetchPassage({ book: selectedBook, chapter: selectedChapter, translation }),
     staleTime: 1000 * 60 * 30,
     retry: 1,
+    enabled: tab === "read",
   });
 
   const { data: planPassage, isLoading: planLoading } = useQuery({
     queryKey: ["bible-plan", planReading?.book, planReading?.chapter, translation],
     queryFn: () => fetchPassage({ book: planReading.book, chapter: planReading.chapter, translation }),
-    enabled: !!planReading,
+    enabled:!!planReading && tab === "plan",
     staleTime: 1000 * 60 * 30,
     retry: 1,
   });
@@ -62,6 +99,7 @@ export default function BibleReader() {
   const { data: notes = [] } = useQuery({
     queryKey: ["notes"],
     queryFn: getNotes,
+    enabled: tab === "notes",
   });
 
   const createNoteMutation = useMutation({
@@ -188,7 +226,7 @@ export default function BibleReader() {
                 className="flex-1 py-2.5 bg-[#401667] text-white rounded-xl text-sm font-medium disabled:opacity-50 hover:opacity-90 transition flex items-center justify-center gap-2"
               >
                 <Check className="w-4 h-4" />
-                {createNoteMutation.isPending ? "Saving..." : "Save Note"}
+                {createNoteMutation.isPending? "Saving..." : "Save Note"}
               </button>
             </div>
           </div>
@@ -201,23 +239,24 @@ export default function BibleReader() {
           <BookOpen className="w-5 h-5 text-purple-200" />
           <h2 className="text-white font-semibold text-lg">Bible</h2>
         </div>
-        <div className="flex gap-1 bg-purple-900/40 rounded-xl p-1">
+        <div className="grid grid-cols-2 md:flex gap-2 bg-purple-900/40 rounded-xl p-1 overflow-x-auto">
           {[
             { id: "read", label: "Read", icon: BookOpen },
             { id: "plan", label: "Plan", icon: Calendar },
+            { id: "devotional", label: "Devotional", icon: Heart },
             { id: "notes", label: "Notes", icon: StickyNote },
           ].map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setTab(id)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-all ${
-                tab === id ? "bg-white text-[#401667] shadow-sm" : "text-purple-200 hover:text-white"
+              className={`border-1 flex-1 min-w-fit flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                tab === id? "bg-white text-[#401667] shadow-sm" : "text-purple-200 hover:text-white"
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
               {label}
               {id === "notes" && notes.length > 0 && (
-                <span className={`text-xs px-1.5 py-0.5 rounded-full ${tab === "notes" ? "bg-[#401667] text-white" : "bg-purple-700 text-purple-200"}`}>
+                <span className={`text-xs px-1.5 py-0.5 rounded-full ${tab === "notes"? "bg-[#401667] text-white" : "bg-purple-700 text-purple-200"}`}>
                   {notes.length}
                 </span>
               )}
@@ -247,7 +286,7 @@ export default function BibleReader() {
                     <button
                       key={book.name}
                       onClick={() => { setSelectedBook(book.name); setSelectedChapter(1); setShowBookPicker(false); }}
-                      className={`w-full text-left px-3 py-2 text-sm hover:bg-purple-50 transition ${selectedBook === book.name ? "text-[#401667] font-semibold bg-purple-50" : "text-gray-700"}`}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-purple-50 transition ${selectedBook === book.name? "text-[#401667] font-semibold bg-purple-50" : "text-gray-700"}`}
                     >
                       {book.name}
                     </button>
@@ -272,7 +311,7 @@ export default function BibleReader() {
                       <button
                         key={ch}
                         onClick={() => { setSelectedChapter(ch); setShowChapterPicker(false); }}
-                        className={`py-1.5 text-xs rounded-lg transition ${selectedChapter === ch ? "bg-[#401667] text-white" : "hover:bg-purple-50 text-gray-700"}`}
+                        className={`py-1.5 text-xs rounded-lg transition ${selectedChapter === ch? "bg-[#401667] text-white" : "hover:bg-purple-50 text-gray-700"}`}
                       >
                         {ch}
                       </button>
@@ -297,7 +336,7 @@ export default function BibleReader() {
                     <button
                       key={t.id}
                       onClick={() => { setTranslation(t.id); setShowTranslation(false); }}
-                      className={`w-full text-left px-3 py-2.5 text-sm hover:bg-purple-50 transition first:rounded-t-xl last:rounded-b-xl ${translation === t.id ? "text-[#401667] font-semibold bg-purple-50" : "text-gray-700"}`}
+                      className={`w-full text-left px-3 py-2.5 text-sm hover:bg-purple-50 transition first:rounded-t-xl last:rounded-b-xl ${translation === t.id? "text-[#401667] font-semibold bg-purple-50" : "text-gray-700"}`}
                     >
                       <span className="font-medium">{t.short}</span>
                       <span className="text-gray-400 text-xs ml-2">{t.label}</span>
@@ -318,7 +357,7 @@ export default function BibleReader() {
             {passageError && (
               <p className="text-center text-red-500 text-sm py-8">Failed to load passage. Please try again.</p>
             )}
-            {passage && !isLoading && (
+            {passage &&!isLoading && (
               <>
                 <h3 className="font-bold text-gray-900 text-base mb-4">
                   {passage.reference}
@@ -326,10 +365,10 @@ export default function BibleReader() {
                     {TRANSLATIONS.find((t) => t.id === translation)?.short}
                   </span>
                 </h3>
-                <div className="text-gray-700 leading-8 text-sm sm:text-[15px] space-y-1">
+                <div className="text-gray-700 leading-8 text-sm sm:text- space-y-1">
                   {passage.verses?.map((v) => (
                     <span key={v.verse}>
-                      <sup className="text-[10px] text-[#401667] font-bold mr-1">{v.verse}</sup>
+                      <sup className="text- text-[#401667] font-bold mr-1">{v.verse}</sup>
                       {v.text}{" "}
                     </span>
                   )) || <p className="whitespace-pre-line">{passage.text}</p>}
@@ -359,13 +398,13 @@ export default function BibleReader() {
       {/* ════════════ PLAN TAB ════════════ */}
       {tab === "plan" && (
         <div>
-          <div className="flex gap-2 p-3 border-b border-gray-100 overflow-x-auto">
+          <div className="grid grid-cols-2 md:flex gap-2 p-3 border-b border-gray-100 overflow-x-auto">
             {Object.entries(READING_PLANS).map(([key, plan]) => (
               <button
                 key={key}
                 onClick={() => { setActivePlan(key); setPlanDay(1); setPlanReading(null); }}
                 className={`shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium transition ${
-                  activePlan === key ? "bg-[#401667] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  activePlan === key? "bg-[#401667] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >
                 {plan.label}
@@ -396,7 +435,7 @@ export default function BibleReader() {
 
           <div className="p-4">
             <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-3">
-              {currentDayReadings.length} chapter{currentDayReadings.length !== 1 ? "s" : ""} today
+              {currentDayReadings.length} chapter{currentDayReadings.length!== 1? "s" : ""} today
             </p>
             <div className="space-y-2">
               {currentDayReadings.map((r, i) => {
@@ -408,12 +447,12 @@ export default function BibleReader() {
                     onClick={() => setPlanReading(r)}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl border text-sm transition ${
                       isActive
-                        ? "bg-[#401667] text-white border-[#401667]"
+                       ? "bg-[#401667] text-white border-[#401667]"
                         : "bg-white border-gray-200 text-gray-700 hover:border-[#401667] hover:text-[#401667]"
                     }`}
                   >
                     <span className="font-medium">{r.book} {r.chapter}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${isActive ? "bg-white/20 text-white" : streamColor}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${isActive? "bg-white/20 text-white" : streamColor}`}>
                       {r.stream}
                     </span>
                   </button>
@@ -429,7 +468,7 @@ export default function BibleReader() {
                   <div className="w-6 h-6 border-4 border-[#401667] border-t-transparent rounded-full animate-spin" />
                 </div>
               )}
-              {planPassage && !planLoading && (
+              {planPassage &&!planLoading && (
                 <>
                   <h3 className="font-bold text-gray-900 text-base mb-4">
                     {planPassage.reference}
@@ -440,13 +479,80 @@ export default function BibleReader() {
                   <div className="text-gray-700 leading-8 text-sm space-y-1">
                     {planPassage.verses?.map((v) => (
                       <span key={v.verse}>
-                        <sup className="text-[10px] text-[#401667] font-bold mr-1">{v.verse}</sup>
+                        <sup className="text- text-[#401667] font-bold mr-1">{v.verse}</sup>
                         {v.text}{" "}
                       </span>
                     )) || <p className="whitespace-pre-line">{planPassage.text}</p>}
                   </div>
                 </>
               )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ════════════ DEVOTIONAL TAB ════════════ */}
+      {tab === "devotional" && (
+        <div className="p-6">
+          {devoLoading && (
+            <div className="flex justify-center py-12">
+              <div className="w-8 h-8 border-4 border-[#401667] border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
+
+          {devotional &&!devoLoading && (
+            <div className="max-w-2xl mx-auto">
+              <div className="text-center mb-6">
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-purple-100 rounded-full mb-3">
+                  <Heart className="w-6 h-6 text-[#401667]" />
+                </div>
+                <p className="text-xs text-gray-500 uppercase tracking-wide">{devotional.date}</p>
+                <h2 className="text-2xl font-bold text-gray-900 mt-2">Daily Devotional</h2>
+              </div>
+
+              <div className="bg-purple-50 border-l-4 border-[#401667] rounded-r-xl p-5 mb-6">
+                <p className="text-lg text-gray-800 font-medium italic leading-relaxed">
+                  "{devotional.verse}"
+                </p>
+                <p className="text-sm text-[#401667] font-semibold mt-3">
+                  — {devotional.reference} ({devotional.version})
+                </p>
+              </div>
+
+              <div className="prose prose-sm max-w-none">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Reflection</h3>
+                <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                  {devotional.devotional}
+                </p>
+              </div>
+
+              <div className="mt-8 pt-6 border-t border-gray-200 flex gap-3">
+                <button
+                  onClick={() => {
+                    setTab("read");
+                    // Try to parse reference like "John 3:16" to jump to that chapter
+                    const match = devotional.reference.match(/^(.+?)\s+(\d+):/);
+                    if (match) {
+                      setSelectedBook(match[1]);
+                      setSelectedChapter(parseInt(match[2]));
+                    }
+                  }}
+                  className="flex-1 py-2.5 bg-[#401667] text-white rounded-xl text-sm font-medium hover:opacity-90 transition"
+                >
+                  Read Full Chapter
+                </button>
+                <button
+                  onClick={() => {
+                    setTab("notes");
+                    setShowNoteForm(true);
+                    setNoteTitle(`Devotional: ${devotional.reference}`);
+                    setNoteContent(`Verse: ${devotional.verse}\n\nReflection: ${devotional.devotional}`);
+                  }}
+                  className="flex-1 py-2.5 border border-gray-300 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition"
+                >
+                  Save as Note
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -475,7 +581,7 @@ export default function BibleReader() {
               <div key={note._id} className="border border-gray-200 rounded-xl overflow-hidden">
                 <div
                   className="flex items-center justify-between px-3 py-3 bg-gray-50 cursor-pointer"
-                  onClick={() => setExpandedNote(expandedNote === note._id ? null : note._id)}
+                  onClick={() => setExpandedNote(expandedNote === note._id? null : note._id)}
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-800 truncate">
@@ -487,7 +593,7 @@ export default function BibleReader() {
                   </div>
                   <div className="flex items-center gap-1 ml-2">
                     <span className="text-xs text-gray-400">{new Date(note.createdAt).toLocaleDateString()}</span>
-                    {expandedNote === note._id ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                    {expandedNote === note._id? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
                   </div>
                 </div>
 
@@ -502,11 +608,11 @@ export default function BibleReader() {
                         onClick={() => { if (window.confirm("Share this note to your feed?")) shareNoteMutation.mutate(note._id); }}
                         disabled={shareNoteMutation.isPending || note.sharedToFeed}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition disabled:opacity-50 ${
-                          note.sharedToFeed ? "bg-green-50 text-green-600 border border-green-200" : "bg-[#401667] text-white hover:opacity-90"
+                          note.sharedToFeed? "bg-green-50 text-green-600 border border-green-200" : "bg-[#401667] text-white hover:opacity-90"
                         }`}
                       >
                         <Share2 className="w-3 h-3" />
-                        {note.sharedToFeed ? "Shared" : shareNoteMutation.isPending ? "Sharing..." : "Share to Feed"}
+                        {note.sharedToFeed? "Shared" : shareNoteMutation.isPending? "Sharing..." : "Share to Feed"}
                       </button>
                       <button
                         onClick={() => { if (window.confirm("Delete this note?")) deleteNoteMutation.mutate(note._id); }}

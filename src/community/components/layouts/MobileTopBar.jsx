@@ -11,7 +11,7 @@ const MobileTopBar = ({ onMenuClick }) => {
   });
 
   return (
-    <header className="sticky flex items-center justify-between top-0 z-30 bg-white border-b border-gray-100 px-5 md:px-40 py-2">
+    <header className="sticky flex items-center justify-between top-0 z-30 bg-white border-b border-gray-100 px-5 md:px-20 2xl:px-40 py-2">
       {/* Logo */}
       <div className="flex items-center shrink-0 md:py-3">
         <img src={pistis_logo} alt="Pistis Trybe Logo" className="w-3/12" />
