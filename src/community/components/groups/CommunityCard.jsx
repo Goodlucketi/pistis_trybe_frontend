@@ -2,32 +2,29 @@ import { MoreVertical, Settings, Users, LogOut } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
-const CommunityCard = ({ community, userRole, onJoin }) => {
+const CommunityCard = ({ community, userRole, onJoin, isLoading }) => {
   const [showMenu, setShowMenu] = useState(false);
-  const { title, image, membersCount, members = [] } = community;
+  const { name, coverUrl, membersCount, members = [] } = community; // ← Changed
 
   const displayMembers = members.slice(0, 5);
 
   return (
     <div className="w-full bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition duration-300">
-      {/* Banner */}
-      <Link to={`/dashboard/groups/${community.id}`}>
+      <Link to={`/dashboard/groups/${community._id}`}>
         <div
           className="h-18 w-full bg-cover bg-center"
-          style={{ backgroundImage: `url(${image})` }}
+          style={{ backgroundImage: `url(${coverUrl})` }} // ← Changed from image
         />
       </Link>
 
-      {/* Content */}
       <div className="bg-white px-4 py-3">
         <div className="flex items-start justify-between mb-1">
-          <Link to={`/dashboard/groups/${community.id}`}>
+          <Link to={`/dashboard/groups/${community._id}`}>
             <h3 className="text-gray-800 font-medium text-lg hover:text-[#401667]">
-              {title}
+              {name} {/* ← Changed from title */}
             </h3>
           </Link>
           
-          {/* Admin/Member Menu */}
           {userRole!== "non-member" && (
             <div className="relative">
               <button 
@@ -40,24 +37,14 @@ const CommunityCard = ({ community, userRole, onJoin }) => {
                 <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border z-10">
                   {userRole === "admin" && (
                     <Link 
-                      to={`/dashboard/groups/${community.id}/settings`}
+                      to={`/dashboard/groups/${community._id}/settings`}
                       className="flex items-center gap-2 px-4 py-2 hover:bg-gray-50 text-sm"
                     >
                       <Settings size={16} /> Manage Group
                     </Link>
                   )}
-
-                  {userRole !== "non-member" && (
-                    <Link
-                      to={`/dashboard/messages/${community.id}`}
-                      className="px-4 py-2 rounded-xl bg-gray-200 text-gray-800 hover:bg-gray-300 text-sm font-medium"
-                    >
-                      Message
-                    </Link>
-                  )}
-                  
                   <Link 
-                    to={`/dashboard/groups/${community.id}/members`}
+                    to={`/dashboard/groups/${community._id}/members`}
                     className="flex items-center gap-2 px-4 py-2 hover:bg-gray-50 text-sm"
                   >
                     <Users size={16} /> View Members
@@ -74,15 +61,14 @@ const CommunityCard = ({ community, userRole, onJoin }) => {
           )}
         </div>
 
-        {/* Avatars + Count + Button */}
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <div className="flex -space-x-2">
               {displayMembers.map((member) => (
                 <img
-                  key={member.id}
-                  src={member.avatar}
-                  alt={member.name}
+                  key={member._id || member.id}
+                  src={member.avatarUrl || member.avatar} // ← Handle both
+                  alt={member.fullName || member.name}
                   className="w-8 h-8 rounded-full border-2 border-white object-cover"
                 />
               ))}
@@ -92,7 +78,6 @@ const CommunityCard = ({ community, userRole, onJoin }) => {
             </span>
           </div>
 
-          {/* State-based Button */}
           {userRole === "admin" && (
             <span className="px-4 py-2 rounded-xl bg-[#401667] text-white text-sm font-medium">
               Admin
@@ -106,9 +91,10 @@ const CommunityCard = ({ community, userRole, onJoin }) => {
           {userRole === "non-member" && (
             <button
               onClick={onJoin}
-              className="px-5 py-2 rounded-xl font-medium transition duration-300 bg-purple-200 text-purple-900 hover:bg-purple-300"
+              disabled={isLoading}
+              className="px-5 py-2 rounded-xl font-medium transition duration-300 bg-purple-200 text-purple-900 hover:bg-purple-300 disabled:opacity-50"
             >
-              Join
+              {isLoading? "..." : "Join"}
             </button>
           )}
         </div>

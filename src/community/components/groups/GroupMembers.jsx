@@ -1,33 +1,40 @@
-// src/pages/groups/GroupMembers.jsx
 import { useParams, useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Shield, UserX, Crown } from "lucide-react";
-import { useState } from "react";
-import communitiesData from "../../store/data/communities.json";
+import { getGroupById, getGroupMembers, kickMember, promoteMember } from "../../../services/GroupService";
 
 const GroupMembers = ({ currentUserId = 1 }) => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [community, setCommunity] = useState(communitiesData.find(c => c.id === Number(id)));
+  const queryClient = useQueryClient();
+
+  const { data: community } = useQuery({
+    queryKey: ['group', id],
+    queryFn: () => getGroupById(id),
+  });
+
+  const { data: membersData } = useQuery({
+    queryKey: ['group-members', id],
+    queryFn: () => getGroupMembers(id),
+  });
+
+  const members = membersData?.members || community?.members || [];
   
-  const currentUserRole = community?.members?.find(m => m.id === currentUserId)?.role;
+  const currentUserRole = members?.find(m => m.id === currentUserId)?.role;
   const isAdmin = currentUserRole === "admin";
 
-  const handleKick = (memberId) => {
-    setCommunity({
-      ...community,
-      members: community.members.filter(m => m.id !== memberId),
-      membersCount: community.membersCount - 1
-    });
-  };
+  const kickMutation = useMutation({
+    mutationFn: (userId) => kickMember({ groupId: id, userId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['group-members', id] });
+      queryClient.invalidateQueries({ queryKey: ['group', id] });
+    },
+  });
 
-  const handlePromote = (memberId) => {
-    setCommunity({
-      ...community,
-      members: community.members.map(m => 
-        m.id === memberId ? { ...m, role: "admin" } : m
-      )
-    });
-  };
+  const promoteMutation = useMutation({
+    mutationFn: (userId) => promoteMember({ groupId: id, userId }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['group-members', id] }),
+  });
 
   if (!community) return <div className="p-8">Group not found</div>;
 
@@ -41,7 +48,7 @@ const GroupMembers = ({ currentUserId = 1 }) => {
         <h1 className="text-2xl font-bold mb-6">Members ({community.membersCount})</h1>
         
         <div className="space-y-3">
-          {community.members?.map(member => (
+          {members?.map(member => (
             <div key={member.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg">
               <div className="flex items-center gap-3">
                 <img src={member.avatar} alt={member.name} className="w-12 h-12 rounded-full" />
@@ -54,11 +61,12 @@ const GroupMembers = ({ currentUserId = 1 }) => {
                 </div>
               </div>
 
-              {isAdmin && member.id !== currentUserId && (
+              {isAdmin && member.id!== currentUserId && (
                 <div className="flex gap-2">
-                  {member.role !== "admin" && (
+                  {member.role!== "admin" && (
                     <button 
-                      onClick={() => handlePromote(member.id)}
+                      onClick={() => promoteMutation.mutate(member.id)}
+                      disabled={promoteMutation.isPending}
                       className="p-2 hover:bg-gray-100 rounded-lg text-[#401667]"
                       title="Make Admin"
                     >
@@ -66,7 +74,8 @@ const GroupMembers = ({ currentUserId = 1 }) => {
                     </button>
                   )}
                   <button 
-                    onClick={() => handleKick(member.id)}
+                    onClick={() => kickMutation.mutate(member.id)}
+                    disabled={kickMutation.isPending}
                     className="p-2 hover:bg-gray-100 rounded-lg text-red-600"
                     title="Remove"
                   >

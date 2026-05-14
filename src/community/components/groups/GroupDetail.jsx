@@ -1,43 +1,59 @@
-// src/pages/groups/GroupDetail.jsx
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { useState, useMemo } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { ArrowLeft, MoreVertical, Users, Settings, Pin, Trash2 } from "lucide-react";
-import communitiesData from "../../store/data/communities.json";
+import { getGroupById, getGroupMembers, kickMember, promoteMember } from "../../../services/GroupService";
+import getErrorMessage from "../../../hooks/useErrorToast";
 
 const GroupDetail = ({ currentUserId = 1 }) => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [posts, setPosts] = useState([
-    { id: 1, userId: 2, text: "Excited for today's session!", timestamp: new Date().toISOString(), pinned: false },
-    { id: 2, userId: 1, text: "Remember to bring your mats", timestamp: new Date().toISOString(), pinned: true }
-  ]);
+  const queryClient = useQueryClient();
   const [newPost, setNewPost] = useState("");
 
-  const community = communitiesData.find(c => c.id === Number(id));
+  const { data: community, isLoading: groupLoading } = useQuery({
+    queryKey: ['group', id],
+    queryFn: () => getGroupById(id),
+  });
+
+  const {
+    data: postsData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['group-posts', id],
+    queryFn: ({ pageParam }) => getGroupPosts(id, pageParam),
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    enabled:!!id,
+  });
+
+  const posts = postsData?.pages.flatMap(p => p.posts) ?? [];
+
   const member = community?.members?.find(m => m.id === currentUserId);
   const userRole = member?.role || "non-member";
-  const canPost = userRole !== "non-member";
+  const canPost = userRole!== "non-member";
 
-  const handlePost = () => {
-    if (!newPost.trim()) return;
-    setPosts([{ 
-      id: Date.now(), 
-      userId: currentUserId, 
-      text: newPost, 
-      timestamp: new Date().toISOString(),
-      pinned: false 
-    }, ...posts]);
-    setNewPost("");
-  };
+  const createPostMutation = useMutation({
+    mutationFn: () => createGroupPost({ groupId: id, text: newPost }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['group-posts', id] });
+      setNewPost("");
+    },
+    onError: (e) => alert(getErrorMessage(e)),
+  });
 
-  const handlePin = (postId) => {
-    setPosts(posts.map(p => p.id === postId ? { ...p, pinned: !p.pinned } : p));
-  };
+  const pinMutation = useMutation({
+    mutationFn: (postId) => pinPost({ groupId: id, postId }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['group-posts', id] }),
+  });
 
-  const handleDelete = (postId) => {
-    setPosts(posts.filter(p => p.id !== postId));
-  };
+  const deleteMutation = useMutation({
+    mutationFn: (postId) => deletePost({ groupId: id, postId }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['group-posts', id] }),
+  });
 
+  if (groupLoading) return <div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-[#401667] border-t-transparent rounded-full animate-spin" /></div>;
   if (!community) return <div className="p-8">Group not found</div>;
 
   return (
@@ -46,7 +62,7 @@ const GroupDetail = ({ currentUserId = 1 }) => {
       <div className="bg-white rounded-2xl shadow-sm mb-6 overflow-hidden">
         <div 
           className="h-48 bg-cover bg-center"
-          style={{ backgroundImage: `url(${community.image})` }}
+          style={{ backgroundImage: `url(${community.coverUrl})` }}
         />
         <div className="p-6">
           <div className="flex items-start justify-between">
@@ -77,7 +93,7 @@ const GroupDetail = ({ currentUserId = 1 }) => {
         </div>
       </div>
 
-      {/* Post Box - Only for members/admin */}
+      {/* Post Box */}
       {canPost && (
         <div className="bg-white rounded-2xl shadow-sm p-4 mb-6">
           <textarea
@@ -89,38 +105,39 @@ const GroupDetail = ({ currentUserId = 1 }) => {
           />
           <div className="flex justify-end mt-3">
             <button 
-              onClick={handlePost}
-              className="px-6 py-2 bg-[#401667] text-white rounded-lg hover:bg-[#2e1048]"
+              onClick={() => createPostMutation.mutate()}
+              disabled={!newPost.trim() || createPostMutation.isPending}
+              className="px-6 py-2 bg-[#401667] text-white rounded-lg hover:bg-[#2e1048] disabled:opacity-50"
             >
-              Post
+              {createPostMutation.isPending? "Posting..." : "Post"}
             </button>
           </div>
         </div>
       )}
 
-      {/* Posts Feed */}
+      {/* Posts Feed with infinite scroll */}
       <div className="space-y-4">
         {posts
-          .sort((a, b) => (b.pinned - a.pinned) || new Date(b.timestamp) - new Date(a.timestamp))
-          .map(post => {
-            const author = community.members.find(m => m.id === post.userId);
+         .sort((a, b) => (b.pinned - a.pinned) || new Date(b.createdAt) - new Date(a.createdAt))
+         .map(post => {
+            const author = post.author || community.members.find(m => m.id === post.userId);
             return (
-              <div key={post.id} className="bg-white rounded-2xl shadow-sm p-4">
+              <div key={post._id} className="bg-white rounded-2xl shadow-sm p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <img src={author?.avatar} alt={author?.name} className="w-10 h-10 rounded-full" />
+                    <img src={author?.avatarUrl} alt={author?.fullName} className="w-10 h-10 rounded-full" />
                     <div>
-                      <p className="font-semibold">{author?.name}</p>
-                      <p className="text-xs text-gray-500">{new Date(post.timestamp).toLocaleString()}</p>
+                      <p className="font-semibold">{author?.fullName}</p>
+                      <p className="text-xs text-gray-500">{new Date(post.createdAt).toLocaleString()}</p>
                     </div>
                     {post.pinned && <Pin size={16} className="text-[#401667]" />}
                   </div>
                   {userRole === "admin" && (
                     <div className="flex gap-2">
-                      <button onClick={() => handlePin(post.id)} className="p-1 hover:bg-gray-100 rounded">
-                        <Pin size={16} />
+                      <button onClick={() => pinMutation.mutate(post._id)} className="p-1 hover:bg-gray-100 rounded">
+                        <Pin size={16} className={post.pinned? "fill-[#401667] text-[#401667]" : ""} />
                       </button>
-                      <button onClick={() => handleDelete(post.id)} className="p-1 hover:bg-gray-100 rounded text-red-600">
+                      <button onClick={() => deleteMutation.mutate(post._id)} className="p-1 hover:bg-gray-100 rounded text-red-600">
                         <Trash2 size={16} />
                       </button>
                     </div>
@@ -130,6 +147,16 @@ const GroupDetail = ({ currentUserId = 1 }) => {
               </div>
             );
           })}
+        
+        {hasNextPage && (
+          <button 
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+            className="w-full py-3 text-[#401667] hover:bg-purple-50 rounded-xl"
+          >
+            {isFetchingNextPage? "Loading..." : "Load more posts"}
+          </button>
+        )}
       </div>
     </div>
   );
