@@ -5,6 +5,7 @@ import { ArrowLeft, MessageCircle } from "lucide-react";
 import { getMe, getUserPosts, getFollowers, getFollowing, toggleFollow } from "../../services/UserService";
 import { startDirectChat } from "../../services/ChatService";
 import ActivityContent from "../../community/components/profile/ActivityContent";
+import ImageViewer from "../../shared/ImageViewer";
 import getErrorMessage from "../../hooks/useErrorToast";
 
 export default function UserProfile() {
@@ -12,15 +13,14 @@ export default function UserProfile() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("feed");
+  const [viewerOpen, setViewerOpen] = useState(false);
 
   const { data: currentUser } = useQuery({ queryKey: ['me'], queryFn: getMe });
 
   const { data: profileUser, isLoading } = useQuery({
     queryKey: ['user', userId],
     queryFn: async () => {
-      const response = await import("../../api/api").then(m =>
-        m.default.get(`/users/${userId}`)
-      );
+      const response = await import("../../api/api").then(m => m.default.get(`/users/${userId}`));
       return response.data.data;
     },
     enabled: !!userId,
@@ -44,9 +44,7 @@ export default function UserProfile() {
     enabled: !!userId,
   });
 
-  const isFollowing = followersData?.followers?.some(
-    (f) => f._id === currentUser?._id
-  );
+  const isFollowing = followersData?.followers?.some((f) => f._id === currentUser?._id);
 
   const followMutation = useMutation({
     mutationFn: () => toggleFollow(userId),
@@ -72,9 +70,7 @@ export default function UserProfile() {
   }
 
   if (!profileUser) {
-    return (
-      <div className="text-center py-20 text-gray-400">User not found.</div>
-    );
+    return <div className="text-center py-20 text-gray-400">User not found.</div>;
   }
 
   const isOwnProfile = currentUser?._id === userId;
@@ -82,22 +78,24 @@ export default function UserProfile() {
   return (
     <div className="relative min-h-screen pb-12">
       <div className="overflow-auto w-full px-2 py-2">
-        {/* Header */}
         <button
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 mb-4 transition"
         >
-          <ArrowLeft className="w-4 h-4" />
-          Back
+          <ArrowLeft className="w-4 h-4" /> Back
         </button>
 
         {/* Profile card */}
         <div className="border mb-3 border-[#E8E8E8] bg-white p-4 sm:p-6 shadow rounded-2xl">
           <div className="flex justify-between items-start gap-4">
-            {/* Left */}
             <div className="flex flex-col gap-4">
-              {/* Avatar */}
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gray-200 overflow-hidden shrink-0">
+              {/* Avatar — tap to view full size */}
+              <div
+                className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gray-200 overflow-hidden shrink-0 ${
+                  profileUser.avatarUrl ? "cursor-pointer hover:opacity-90 transition" : ""
+                }`}
+                onClick={() => profileUser.avatarUrl && setViewerOpen(true)}
+              >
                 {profileUser.avatarUrl ? (
                   <img src={profileUser.avatarUrl} alt={profileUser.fullName} className="w-full h-full object-cover" />
                 ) : (
@@ -116,7 +114,6 @@ export default function UserProfile() {
                 {profileUser.biography && (
                   <p className="text-sm text-gray-500 mt-1 max-w-sm">{profileUser.biography}</p>
                 )}
-
                 <div className="flex flex-wrap gap-4 mt-3 text-xs sm:text-sm text-gray-600">
                   <span><strong className="text-black">{followersData?.followers?.length || 0}</strong> Followers</span>
                   <span><strong className="text-black">{followingData?.following?.length || 0}</strong> Following</span>
@@ -125,7 +122,6 @@ export default function UserProfile() {
               </div>
             </div>
 
-            {/* Right — action buttons */}
             {!isOwnProfile && (
               <div className="flex flex-col sm:flex-row gap-2 shrink-0">
                 <button
@@ -133,8 +129,7 @@ export default function UserProfile() {
                   disabled={messageMutation.isPending}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-300 text-sm font-medium hover:bg-gray-50 transition disabled:opacity-50"
                 >
-                  <MessageCircle className="w-4 h-4" />
-                  Message
+                  <MessageCircle className="w-4 h-4" /> Message
                 </button>
                 <button
                   onClick={() => followMutation.mutate()}
@@ -164,6 +159,14 @@ export default function UserProfile() {
           />
         </div>
       </div>
+
+      {/* Avatar viewer */}
+      <ImageViewer
+        images={profileUser?.avatarUrl ? [profileUser.avatarUrl] : []}
+        startIndex={0}
+        isOpen={viewerOpen}
+        onClose={() => setViewerOpen(false)}
+      />
     </div>
   );
 }

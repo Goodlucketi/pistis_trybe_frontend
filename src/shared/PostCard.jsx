@@ -7,6 +7,7 @@ import { startDirectChat } from "../services/ChatService";
 import { toggleLike, deletePost, editPost } from "../services/PostService";
 import { getCurrentUser } from "../services/AuthService";
 import getErrorMessage from "../hooks/useErrorToast";
+import ImageViewer from "./ImageViewer";
 
 const PostCard = ({ post, variant = "default", isOwnPost = false, onLike, onDelete, onEdit }) => {
   const queryClient = useQueryClient();
@@ -16,13 +17,14 @@ const PostCard = ({ post, variant = "default", isOwnPost = false, onLike, onDele
   const [showComments, setShowComments] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(post.content || "");
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState(0);
 
   const authorName = typeof post.author === "string" ? post.author : post.author?.name;
   const authorAvatar = typeof post.author === "string" ? post.avatar : post.author?.avatar;
   const authorId = post.author?._id || post.authorId;
   const isFeedView = variant === "feed";
 
-  // Following state
   const { data: followingData } = useQuery({
     queryKey: ['following', currentUser?._id],
     queryFn: async () => {
@@ -32,13 +34,9 @@ const PostCard = ({ post, variant = "default", isOwnPost = false, onLike, onDele
     enabled: !!currentUser?._id && !isOwnPost,
   });
 
-  const isFollowing = followingData?.following?.some(
-    (u) => u._id === authorId
-  );
-
+  const isFollowing = followingData?.following?.some((u) => u._id === authorId);
   const isLiked = post.likedBy?.includes(currentUser?._id) || false;
 
-  // Follow
   const followMutation = useMutation({
     mutationFn: () => toggleFollow(authorId),
     onSuccess: () => {
@@ -48,14 +46,12 @@ const PostCard = ({ post, variant = "default", isOwnPost = false, onLike, onDele
     onError: (error) => alert(getErrorMessage(error)),
   });
 
-  // Message
   const messageMutation = useMutation({
     mutationFn: () => startDirectChat(authorId),
     onSuccess: (chat) => navigate(`/dashboard/messages/${chat._id}`),
     onError: (error) => alert(getErrorMessage(error)),
   });
 
-  // Delete
   const deleteMutation = useMutation({
     mutationFn: () => deletePost(post.id),
     onSuccess: () => {
@@ -66,7 +62,6 @@ const PostCard = ({ post, variant = "default", isOwnPost = false, onLike, onDele
     onError: (error) => alert(getErrorMessage(error)),
   });
 
-  // Edit
   const editMutation = useMutation({
     mutationFn: () => editPost(post.id, { body: editText }),
     onSuccess: () => {
@@ -78,11 +73,13 @@ const PostCard = ({ post, variant = "default", isOwnPost = false, onLike, onDele
   });
 
   const handleAuthorClick = () => {
-    if (isOwnPost) {
-      navigate("/dashboard/profile");
-    } else {
-      navigate(`/dashboard/users/${authorId}`);
-    }
+    if (isOwnPost) navigate("/dashboard/profile");
+    else navigate(`/dashboard/users/${authorId}`);
+  };
+
+  const openViewer = (index) => {
+    setViewerIndex(index);
+    setViewerOpen(true);
   };
 
   return (
@@ -103,7 +100,6 @@ const PostCard = ({ post, variant = "default", isOwnPost = false, onLike, onDele
           </div>
         </button>
 
-        {/* Right side actions */}
         <div className="flex items-center gap-2 relative">
           {isFeedView && !isOwnPost && (
             <>
@@ -129,7 +125,6 @@ const PostCard = ({ post, variant = "default", isOwnPost = false, onLike, onDele
             </>
           )}
 
-          {/* Options menu */}
           <div className="relative">
             <button
               onClick={() => setShowMenu(!showMenu)}
@@ -170,7 +165,7 @@ const PostCard = ({ post, variant = "default", isOwnPost = false, onLike, onDele
         </div>
       </div>
 
-      {/* Editable content */}
+      {/* Content */}
       {editing ? (
         <div className="mb-4">
           <textarea
@@ -198,11 +193,9 @@ const PostCard = ({ post, variant = "default", isOwnPost = false, onLike, onDele
         </div>
       )}
 
-      {/* Images */}
+      {/* Images with viewer */}
       {post.images?.length > 0 && (
-        <div className={`mb-4 sm:mb-6 ${
-          post.images.length === 1 ? "" : "grid grid-cols-2 gap-1"
-        } rounded-xl overflow-hidden`}>
+        <div className={`mb-4 sm:mb-6 ${post.images.length === 1 ? "" : "grid grid-cols-2 gap-1"} rounded-xl overflow-hidden`}>
           {post.images.slice(0, 4).map((url, index) => {
             const isLargeFirst = post.images.length === 3 && index === 0;
             const isOverlay = post.images.length > 4 && index === 3;
@@ -211,7 +204,10 @@ const PostCard = ({ post, variant = "default", isOwnPost = false, onLike, onDele
                 {isOverlay ? (
                   <div className="relative">
                     <img src={url} alt="" className="w-full h-40 sm:h-48 object-cover" />
-                    <div onClick={() => window.open(url, "_blank")} className="absolute inset-0 bg-black/60 flex items-center justify-center cursor-pointer">
+                    <div
+                      onClick={() => openViewer(3)}
+                      className="absolute inset-0 bg-black/60 flex items-center justify-center cursor-pointer"
+                    >
                       <span className="text-white text-xl font-bold">+{post.images.length - 4}</span>
                     </div>
                   </div>
@@ -219,7 +215,7 @@ const PostCard = ({ post, variant = "default", isOwnPost = false, onLike, onDele
                   <img
                     src={url}
                     alt={`attachment ${index + 1}`}
-                    onClick={() => window.open(url, "_blank")}
+                    onClick={() => openViewer(index)}
                     className={`w-full object-cover cursor-pointer hover:opacity-95 transition ${
                       post.images.length === 1 ? "max-h-80 rounded-xl" : `h-40 sm:h-48 ${isLargeFirst ? "h-full" : ""}`
                     }`}
@@ -249,7 +245,6 @@ const PostCard = ({ post, variant = "default", isOwnPost = false, onLike, onDele
           <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${isLiked ? "fill-red-500" : ""}`} />
           <span>{post.likes || 0}</span>
         </button>
-
         <button
           onClick={() => setShowComments(!showComments)}
           className="flex items-center gap-1.5 hover:text-blue-600 transition"
@@ -257,7 +252,6 @@ const PostCard = ({ post, variant = "default", isOwnPost = false, onLike, onDele
           <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
           <span>{post.comments || 0}</span>
         </button>
-
         <button
           onClick={() => {
             navigator.clipboard?.writeText(`${window.location.origin}/dashboard/posts/${post.id}`);
@@ -270,14 +264,19 @@ const PostCard = ({ post, variant = "default", isOwnPost = false, onLike, onDele
         </button>
       </div>
 
-      {/* Comments placeholder */}
       {showComments && (
         <div className="mt-4 pt-4 border-t border-gray-100">
-          <p className="text-sm text-gray-400 text-center py-3">
-            Comments coming soon 🙏
-          </p>
+          <p className="text-sm text-gray-400 text-center py-3">Comments coming soon 🙏</p>
         </div>
       )}
+
+      {/* Image Viewer */}
+      <ImageViewer
+        images={post.images || []}
+        startIndex={viewerIndex}
+        isOpen={viewerOpen}
+        onClose={() => setViewerOpen(false)}
+      />
     </div>
   );
 };
