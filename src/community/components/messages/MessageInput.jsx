@@ -2,12 +2,22 @@ import { useState, useRef, useEffect } from "react";
 import { Send, Paperclip, Smile, X, File, Image as ImageIcon } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 
-const MessageInput = ({ onSendMessage, replyTo, onCancelReply }) => {
+const MessageInput = ({ onSendMessage, replyTo, onCancelReply, autoFocus = true }) => {
   const [text, setText] = useState("");
   const [attachments, setAttachments] = useState([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const fileInputRef = useRef(null);
   const emojiPickerRef = useRef(null);
+  const textareaRef = useRef(null); // ← Add this
+
+  // Auto-focus on mount to open keyboard
+  useEffect(() => {
+    if (autoFocus) {
+      // Small delay so ChatWindow finishes rendering
+      const t = setTimeout(() => textareaRef.current?.focus(), 100);
+      return () => clearTimeout(t);
+    }
+  }, [autoFocus]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -25,17 +35,18 @@ const MessageInput = ({ onSendMessage, replyTo, onCancelReply }) => {
       onSendMessage({
         text: text.trim(),
         attachments: attachments,
-        replyTo: replyTo?.id || null // ← already safe
+        replyTo: replyTo?.id || null
       });
       setText("");
       setAttachments([]);
       setShowEmojiPicker(false);
       onCancelReply?.();
+      textareaRef.current?.focus(); // ← Keep keyboard open after send
     }
   };
 
   const handleFileSelect = (e) => {
-    const files = Array.from(e.target.files || []); // ← guard against null
+    const files = Array.from(e.target.files || []);
     const newAttachments = files.map(file => ({
       id: Date.now() + Math.random(),
       name: file.name,
@@ -59,25 +70,15 @@ const MessageInput = ({ onSendMessage, replyTo, onCancelReply }) => {
   const handleEmojiClick = (emojiData) => {
     setText(prev => prev + (emojiData?.emoji || ""));
     setShowEmojiPicker(false);
+    textareaRef.current?.focus();
   };
 
-  const formatFileSize = (bytes) => {
-    if (!bytes && bytes!== 0) return "0 B"; // ← guard
-    if (bytes < 1024) return bytes + " B";
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
-  };
-
-  const isImage = (type) => type?.startsWith("image/") || false; // ← guard
+  const isImage = (type) => type?.startsWith("image/") || false;
 
   return (
-    <div className="relative">
-      {/* Emoji picker */}
+    <div className="fixed bottom-15 left-0 md:relative md:bottom-0 w-full">
       {showEmojiPicker && (
-        <div
-          ref={emojiPickerRef}
-          className="absolute bottom-full right-0 mb-2 z-50"
-        >
+        <div ref={emojiPickerRef} className="absolute bottom-full right-0 mb-2 z-50">
           <EmojiPicker
             onEmojiClick={handleEmojiClick}
             width={320}
@@ -87,13 +88,12 @@ const MessageInput = ({ onSendMessage, replyTo, onCancelReply }) => {
         </div>
       )}
 
-      {/* Reply preview - SAFE VERSION */}
       {replyTo && (
         <div className="px-4 pt-3 pb-2 border-t border-gray-200 bg-purple-50 flex items-start justify-between gap-3">
           <div className="flex-1 border-l-2 border-purple-600 pl-3 min-w-0">
             <p className="text-xs font-semibold text-purple-700">Replying to</p>
             <p className="text-sm text-gray-800 truncate">
-              {replyTo?.text || "Message"} {/* ← fallback if text is null */}
+              {replyTo?.text || "Message"}
             </p>
           </div>
           <button
@@ -106,7 +106,6 @@ const MessageInput = ({ onSendMessage, replyTo, onCancelReply }) => {
         </div>
       )}
 
-      {/* Attachment previews */}
       {attachments.length > 0 && (
         <div className="px-4 pt-3 pb-1 border-t border-gray-200 bg-white">
           <div className="flex gap-2 overflow-x-auto pb-2">
@@ -172,6 +171,7 @@ const MessageInput = ({ onSendMessage, replyTo, onCancelReply }) => {
           </button>
 
           <textarea
+            ref={textareaRef}
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {
@@ -182,14 +182,14 @@ const MessageInput = ({ onSendMessage, replyTo, onCancelReply }) => {
             }}
             placeholder="Type a message..."
             rows={1}
-            className="flex-1 px-4 py-2 bg-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-600 text-sm resize-none max-h-32"
-            style={{ minHeight: "40px" }}
+            className="flex-1 p-2 bg-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-600 text-base resize-none max-h-32"
+            style={{ minHeight: "44px", fontSize: "16px" }} // ← 16px prevents iOS zoom
           />
 
           <button
             type="submit"
             disabled={!text.trim() && attachments.length === 0}
-            className="p-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-full transition-colors flex-shrink-0"
+            className="p-2.5 bg-[#401667] hover:bg-[#2e1048] disabled:bg-gray-300 disabled:cursor-not-allowed rounded-full transition-colors flex-shrink-0"
           >
             <Send className="w-5 h-5 text-white" />
           </button>

@@ -322,7 +322,7 @@ const MessagesPage = () => {
 
   if (!normalizedCurrentUser) {
     return (
-      <div className="flex items-center justify-center h-">
+      <div className="flex items-center justify-center h-full">
         <div className="w-8 h-8 border-4 border-[#401667] border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -330,7 +330,7 @@ const MessagesPage = () => {
 
   if (isMobile) {
     return (
-      <div className="h- w-full flex flex-col overflow-hidden">
+      <div className="h-[100dvh] w-full flex flex-col overflow-hidden">
         {conversationId && activeConversation? (
           <ChatWindow
             key={activeConversation.id}
@@ -365,7 +365,7 @@ const MessagesPage = () => {
   }
 
   return (
-    <div className="flex h- p-2 overflow-hidden">
+    <div className="flex h-[100dvh] p-2 overflow-hidden">
       <ConversationList
         conversations={normalizedConversations}
         currentUser={normalizedCurrentUser}

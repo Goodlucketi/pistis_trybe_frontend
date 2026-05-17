@@ -109,10 +109,10 @@ const ChatWindow = ({
   const safeConversations = (allConversations || []).filter(c => c && c.id);
 
   return (
-    <div className="flex flex-col h-full w-full bg-gray-50 overflow-hidden relative">
+    <div className="flex flex-col h-[100vh] md:h-full w-full bg-gray-50 overflow-hidden relative">
       {conversation && (
         <>
-          <div className="shrink-0 z-10">
+          <div className="shrink-0 z-10 sticky top-0 bg-white border-b border-gray-200">
             <ChatHeader
               conversation={conversation}
               currentUser={currentUser}
@@ -123,7 +123,7 @@ const ChatWindow = ({
             />
           </div>
 
-          <div className="flex-1 overflow-y-auto overflow-x-hidden pb-24">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden pb-10">
             <MessageList
               messages={safeMessages}
               currentUser={currentUser}
@@ -133,23 +133,22 @@ const ChatWindow = ({
               onDelete={onDelete}
               onForward={(msg) => setForwardingMessage(msg)}
             />
-            <div ref={messagesEndRef} />
+            <div ref={messagesEndRef} className = "h-20" />
           </div>
         </>
       )}
 
       <div
-        className="fixed left-0 right-0 bg-white border-t border-gray-200 p-3 z-20 transition-all duration-200"
+        className="absolute left-0 right-0 bg-white border-t border-gray-200 p-3 z-20 transition-all duration-200"
         style={{
-          bottom: isMobile
-           ? `calc(${keyboardHeight}px + env(safe-area-inset-bottom))`
-            : '0px'
+          bottom: isMobile? `calc(${keyboardHeight}px + env(safe-area-inset-bottom))` : '0px'
         }}
       >
         <MessageInput
           onSendMessage={handleSend}
           replyTo={replyTo}
           onCancelReply={() => setReplyTo(null)}
+          autoFocus={true}
         />
       </div>
 
