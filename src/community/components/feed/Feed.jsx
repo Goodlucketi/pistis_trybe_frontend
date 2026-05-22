@@ -99,6 +99,7 @@ const Feed = () => {
               images: post.mediaUrls || [],
               time: new Date(post.createdAt).toLocaleDateString(),
               likes: post.likes?.length || 0,
+              isLiked: post.likes?.some(likeId => likeId === currentUser?._id) || false,
               comments: 0,
               hashtags: post.hashtags || [],
             }}

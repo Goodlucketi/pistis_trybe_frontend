@@ -51,10 +51,10 @@ const GroupMembers = ({ currentUserId = 1 }) => {
           {members?.map(member => (
             <div key={member.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg">
               <div className="flex items-center gap-3">
-                <img src={member.avatar} alt={member.name} className="w-12 h-12 rounded-full" />
+                <img src={member.avatarUrl} alt={member.fullName} className="w-12 h-12 rounded-full" />
                 <div>
                   <p className="font-semibold flex items-center gap-2">
-                    {member.name}
+                    {member.fullName}
                     {member.role === "admin" && <Crown size={16} className="text-yellow-500" />}
                   </p>
                   <p className="text-sm text-gray-500 capitalize">{member.role}</p>

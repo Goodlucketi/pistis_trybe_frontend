@@ -34,6 +34,12 @@ export default function Profile() {
   });
 
   const userPosts = postsData?.posts || [];
+  const { data: currentUser } = useQuery({ queryKey: ["me"], queryFn: getMe });
+
+  const likeMutation = useMutation({
+    mutationFn: (postId) => likeGroupPost({ postId }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["user-posts"] }),
+  });
 
   const profileUser = user ? {
     _id: user._id,

@@ -29,7 +29,14 @@ const MembersPlaceholder = () => {
   );
 };
 
-const ActivityContent = ({ activeTab, posts = [], isLoading = false }) => {
+const ActivityContent = ({ 
+  activeTab, 
+  posts = [], 
+  isLoading = false,
+  currentUser = null,
+  onLike,
+  onDelete
+}) => {
   if (activeTab === 'members') {
     return <MembersPlaceholder />;
   }
@@ -64,11 +71,14 @@ const ActivityContent = ({ activeTab, posts = [], isLoading = false }) => {
               ? new Date(post.createdAt).toLocaleDateString()
               : post.time,
             likes: post.likes?.length ?? post.likes ?? 0,
+            isLiked: post.likes?.some(likeId => likeId === currentUser?._id) || false,
             comments: post.comments || 0,
             hashtags: post.hashtags || [],
           }}
           variant="profile"
           isOwnPost={true}
+          onLike={() => onLike?.(post._id || post.id)}
+          onDelete={() => onDelete?.(post._id || post.id)}
         />
       ))}
     </div>

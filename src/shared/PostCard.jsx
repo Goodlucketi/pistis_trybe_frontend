@@ -9,7 +9,7 @@ import { getCurrentUser } from "../services/AuthService";
 import getErrorMessage from "../hooks/useErrorToast";
 import ImageViewer from "./ImageViewer";
 
-const PostCard = ({ post, variant = "default", isOwnPost = false, onLike, onDelete, onEdit }) => {
+const PostCard = ({ post, variant = "default", isOwnPost = false, onLike, onDelete, onEdit, }) => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const currentUser = getCurrentUser();
@@ -240,14 +240,16 @@ const PostCard = ({ post, variant = "default", isOwnPost = false, onLike, onDele
       <div className="flex items-center gap-6 sm:gap-10 text-gray-600 text-xs sm:text-sm">
         <button
           onClick={onLike}
-          className={`flex items-center gap-1.5 transition ${isLiked ? "text-red-500" : "hover:text-red-600"}`}
+          className={`flex items-center gap-1.5 transition cursor-pointer ${post.isLiked ? "text-red-500" : "hover:text-red-600"}`}
         >
-          <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${isLiked ? "fill-red-500" : ""}`} />
-          <span>{post.likes || 0}</span>
+          <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${post.isLiked ? "fill-[#401667] text-[#401667]" : "text-gray-500 hover:text-gray-700"}`} />
+          <span  className={`text-sm font-medium ${post.isLiked? "text-[#401667]" : "text-gray-500"}`}>
+            {post.likes || 0}
+          </span>
         </button>
         <button
           onClick={() => setShowComments(!showComments)}
-          className="flex items-center gap-1.5 hover:text-blue-600 transition"
+          className="flex items-center gap-1.5 hover:text-blue-600 transition cursor-pointer"
         >
           <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
           <span>{post.comments || 0}</span>
@@ -257,7 +259,7 @@ const PostCard = ({ post, variant = "default", isOwnPost = false, onLike, onDele
             navigator.clipboard?.writeText(`${window.location.origin}/dashboard/posts/${post.id}`);
             alert("Link copied!");
           }}
-          className="flex items-center gap-1.5 hover:text-green-600 transition"
+          className="flex items-center gap-1.5 hover:text-green-600 transition cursor-pointer"
         >
           <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
           <span>Share</span>

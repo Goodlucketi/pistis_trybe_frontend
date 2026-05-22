@@ -1,5 +1,6 @@
 import api from "../api/api";
 
+// ==================== GROUPS ====================
 export const getGroups = async () => {
   const response = await api.get("/groups");
   return response.data.data;
@@ -21,7 +22,7 @@ export const getGroupMembers = async (id, page = 1, limit = 30) => {
 };
 
 export const getMyGroups = async () => {
-  const response = await api.get("/users/me/groups");
+  const response = await api.get("/groups/my");
   return response.data.data;
 };
 
@@ -32,41 +33,6 @@ export const createGroup = async (formData) => {
   return response.data.data;
 };
 
-// NEW: Posts
-export const getGroupPosts = async (id, cursor = null) => {
-  const response = await api.get(`/groups/${id}/posts`, { 
-    params: { cursor, limit: 10 } 
-  });
-  return response.data.data;
-};
-
-export const createGroupPost = async ({ groupId, text }) => {
-  const response = await api.post(`/groups/${groupId}/posts`, { text });
-  return response.data.data;
-};
-
-export const pinPost = async ({ groupId, postId }) => {
-  const response = await api.patch(`/groups/${groupId}/posts/${postId}/pin`);
-  return response.data.data;
-};
-
-export const deletePost = async ({ groupId, postId }) => {
-  const response = await api.delete(`/groups/${groupId}/posts/${postId}`);
-  return response.data.data;
-};
-
-// NEW: Member actions
-export const kickMember = async ({ groupId, userId }) => {
-  const response = await api.delete(`/groups/${groupId}/members/${userId}`);
-  return response.data.data;
-};
-
-export const promoteMember = async ({ groupId, userId }) => {
-  const response = await api.patch(`/groups/${groupId}/members/${userId}/promote`);
-  return response.data.data;
-};
-
-// NEW: Settings
 export const updateGroup = async ({ id, ...data }) => {
   const response = await api.patch(`/groups/${id}`, data);
   return response.data.data;
@@ -74,5 +40,44 @@ export const updateGroup = async ({ id, ...data }) => {
 
 export const deleteGroup = async (id) => {
   const response = await api.delete(`/groups/${id}`);
+  return response.data.data;
+};
+
+// ==================== GROUP POSTS - USE UNIFIED POST ENDPOINTS ====================
+export const getGroupPosts = async (id, cursor = null) => {
+  const response = await api.get(`/groups/${id}/posts`, { 
+    params: { cursor, limit: 10 } 
+  });
+  return response.data.data;
+};
+
+// CHANGED: Use createPost, pass groupId in formData
+export const createGroupPost = async ({ groupId, formData }) => {
+  formData.append("groupId", groupId); // <-- add groupId to formData
+  const response = await api.post(`/groups/${groupId}/posts`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return response.data.data;
+};
+
+// CHANGED: Use deletePost, only needs postId now
+export const deleteGroupPost = async ({ groupId, postId }) => {
+  const response = await api.delete(`/posts/${postId}`); // <-- unified endpoint
+  return response.data.data;
+};
+
+export const likeGroupPost = async ({ postId }) => {
+  const response = await api.post(`/posts/${postId}/like`); // <-- unified endpoint
+  return response.data.data;
+};
+
+// ==================== MEMBER ACTIONS ====================
+export const kickMember = async ({ groupId, userId }) => {
+  const response = await api.delete(`/groups/${groupId}/members/${userId}`);
+  return response.data.data;
+};
+
+export const promoteMember = async ({ groupId, userId }) => {
+  const response = await api.patch(`/groups/${groupId}/members/${userId}/promote`);
   return response.data.data;
 };
