@@ -1,7 +1,7 @@
 import api from "../api/api";
 
 export const getFeed = async (page = 1, limit = 20, type = "forYou") => {
-  const response = await api.get("/posts", { params: { page, limit, type } });
+  const response = await api.get("/feed", { params: { page, limit, type } });
   return response.data.data;
 };
 

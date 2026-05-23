@@ -52,7 +52,7 @@ export const getGroupPosts = async (id, cursor = null) => {
 };
 
 // CHANGED: Use createPost, pass groupId in formData
-export const createGroupPost = async ({ groupId, formData }) => {
+export const createPost = async ({ groupId, formData }) => {
   formData.append("groupId", groupId); // <-- add groupId to formData
   const response = await api.post(`/groups/${groupId}/posts`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
@@ -61,7 +61,7 @@ export const createGroupPost = async ({ groupId, formData }) => {
 };
 
 // CHANGED: Use deletePost, only needs postId now
-export const deleteGroupPost = async ({ groupId, postId }) => {
+export const deletePost = async ({ groupId, postId }) => {
   const response = await api.delete(`/posts/${postId}`); // <-- unified endpoint
   return response.data.data;
 };

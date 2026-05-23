@@ -2,7 +2,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { ArrowLeft, Users, Settings, ImageIcon, Video, Paperclip, X } from "lucide-react";
-import { getGroupById, joinLeaveGroup, getGroupPosts, createGroupPost } from "../../../services/GroupService";
+import { getGroupById, joinLeaveGroup, getGroupPosts, createPost } from "../../../services/GroupService";
 import { getMe } from "../../../services/UserService";
 import getErrorMessage from "../../../hooks/useErrorToast";
 import PostCard from "../../../shared/PostCard";
@@ -48,9 +48,9 @@ const GroupDetail = () => {
   const createPostMutation = useMutation({
     mutationFn: () => {
       const formData = new FormData();
-      formData.append("text", newPost);
+      formData.append("body", newPost);
       attachments.forEach((file) => formData.append("files", file));
-      return createGroupPost({ groupId: id, formData });
+      return createPost({ groupId: id, formData });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["group-posts", id] });

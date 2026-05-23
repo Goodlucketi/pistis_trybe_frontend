@@ -1,51 +1,61 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+// import { useQuery } from '@tanstack/react-query';
 import ProfileTopBlock from "../../community/components/profile/ProfileTopBlock";
 import ActivityTabs from "../../community/components/profile/Activitytabs";
 import ActivityContent from "../../community/components/profile/ActivityContent";
 import { getMe } from '../../services/UserService';
 import { getFollowers, getFollowing } from '../../services/UserService';
 import { getUserPosts } from '../../services/UserService';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export default function Profile() {
   const [activeTab, setActiveTab] = useState("feed");
 
-  const { data: user, isLoading: userLoading } = useQuery({
+  const { data: currentUser, isLoading: userLoading } = useQuery({
     queryKey: ['me'],
     queryFn: getMe,
   });
 
   const { data: followersData } = useQuery({
-    queryKey: ['followers', user?._id],
-    queryFn: () => getFollowers(user._id),
-    enabled: !!user?._id,
+    queryKey: ['followers', currentUser?._id],
+    queryFn: () => getFollowers(currentUser._id),
+    enabled: !!currentUser?._id,
   });
 
   const { data: followingData } = useQuery({
-    queryKey: ['following', user?._id],
-    queryFn: () => getFollowing(user._id),
-    enabled: !!user?._id,
+    queryKey: ['following', currentUser?._id],
+    queryFn: () => getFollowing(currentUser._id),
+    enabled: !!currentUser?._id,
   });
 
   const { data: postsData, isLoading: postsLoading } = useQuery({
-    queryKey: ['userPosts', user?._id],
-    queryFn: () => getUserPosts(user._id),
-    enabled: !!user?._id,
+    queryKey: ['userPosts', currentUser?._id],
+    queryFn: () => getUserPosts(currentUser._id),
+    enabled: !!currentUser?._id,
   });
 
   const userPosts = postsData?.posts || [];
-  const { data: currentUser } = useQuery({ queryKey: ["me"], queryFn: getMe });
-
+  
+  
   const likeMutation = useMutation({
     mutationFn: (postId) => likeGroupPost({ postId }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["user-posts"] }),
   });
 
-  const profileUser = user ? {
-    _id: user._id,
-    name: user.fullName || user.email,
-    avatar: user.avatarUrl,
-    biography: user.biography,
+  const deleteMutation = useMutation({
+    mutationFn: (postId) => deleteGroupPost({ postId }), // groupId not needed, backend checks author
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user-posts", currentUser._id] });
+    },
+    onError: (e) => alert(getErrorMessage(e)),
+  });
+
+  
+  const profileUser = currentUser ? {
+    _id: currentUser._id,
+    name: currentUser.fullName || currentUser.email,
+    avatar: currentUser.avatarUrl,
+    biography: currentUser.biography,
     followers: followersData?.followers || [],
     following: followingData?.following || [],
     posts: userPosts,
@@ -76,6 +86,9 @@ export default function Profile() {
             activeTab={activeTab}
             posts={activeTab === "feed" ? userPosts : []}
             isLoading={postsLoading}
+            currentUser={currentUser}
+            onLike={likeMutation.mutate}
+            onDelete={deleteMutation.mutate} 
           />
         </div>
       </div>
