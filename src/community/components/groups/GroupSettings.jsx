@@ -5,6 +5,7 @@ import { ArrowLeft, Trash2, Save, Upload } from "lucide-react";
 import { getGroupById, updateGroup, deleteGroup } from "../../../services/GroupService";
 import { getMe } from "../../../services/UserService";
 import getErrorMessage from "../../../hooks/useErrorToast";
+import { toast } from "react-toastify";
 
 const GroupSettings = () => {
   const { id } = useParams();
@@ -42,10 +43,10 @@ const GroupSettings = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["group", id] });
       queryClient.invalidateQueries({ queryKey: ["groups"] });
-      alert("Group updated successfully!");
+      toast.success("Group updated successfully!");
       navigate(`/dashboard/groups/${id}`);
     },
-    onError: (e) => alert(getErrorMessage(e)),
+    onError: (e) => toast.error(getErrorMessage(e)),
   });
 
   const deleteMutation = useMutation({
@@ -54,7 +55,7 @@ const GroupSettings = () => {
       queryClient.invalidateQueries({ queryKey: ["groups"] });
       navigate("/dashboard/groups");
     },
-    onError: (e) => alert(getErrorMessage(e)),
+    onError: (e) => toast.error(getErrorMessage(e)),
   });
 
   const handleCoverChange = (e) => {

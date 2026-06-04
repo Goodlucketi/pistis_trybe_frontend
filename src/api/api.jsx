@@ -1,4 +1,5 @@
 import axios from "axios";
+import { toast } from 'react-toastify';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "https://pistis-trybe-backend.onrender.com/v1",
@@ -25,12 +26,15 @@ api.interceptors.response.use(
     const newToken = response.headers["x-access-token"];
     if (newToken) {
       localStorage.setItem("accessToken", newToken);
+      toast.success(response.data.message);
     }
     return response;
   },
   (error) => {
     // No response at all — network/server down
     if (!error.response) {
+      toast.error(error.response?.data?.message || "Network error. Please check your connection.");
+      
       return Promise.reject({
         message: "Cannot reach the server. Please check your connection.",
         status: 0,

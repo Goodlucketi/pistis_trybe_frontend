@@ -16,6 +16,6 @@ export const getErrorMessage = (error) => {
  * onError: (error) => toast.error(getErrorMessage(error))
  *
  * Or without a toast library:
- * onError: (error) => alert(getErrorMessage(error))
+ * onError: (error) => toast.error(getErrorMessage(error))
  */
 export default getErrorMessage;

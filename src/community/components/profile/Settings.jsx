@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { changePassword } from "../../../services/AuthService";
 import getErrorMessage from "../../../hooks/useErrorToast";
+import { toast } from "react-toastify";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -34,7 +35,7 @@ const Settings = () => {
       setFormData({ currentPassword: "", newPassword: "", confirmPassword: "" });
       setTimeout(() => setSuccessMsg(""), 3000);
     },
-    onError: (error) => alert(getErrorMessage(error)),
+    onError: (error) => toast.error(getErrorMessage(error)),
   });
 
   const handleChange = (e) => {

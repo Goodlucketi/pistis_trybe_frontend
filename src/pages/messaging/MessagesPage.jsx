@@ -8,6 +8,7 @@ import { getChats, getMessages, sendMessage, deleteMessage, reactToMessage, crea
 import { getMe } from "../../services/UserService";
 import { useSocket } from "../../hooks/useSocket";
 import getErrorMessage from "../../hooks/useErrorToast";
+import { toast } from "react-toastify";
 
 const MessagesPage = () => {
   const { conversationId } = useParams();
@@ -242,7 +243,7 @@ const MessagesPage = () => {
           (m) => m?.id!== context?.optimisticMsg?.id
         ),
       }));
-      alert(getErrorMessage(error));
+      toast.error(getErrorMessage(error));
     },
   });
 
@@ -254,13 +255,13 @@ const MessagesPage = () => {
         [conversationId]: (prev[conversationId] || []).filter((m) => m?.id!== messageId),
       }));
     },
-    onError: (error) => alert(getErrorMessage(error)),
+    onError: (error) => toast.error(getErrorMessage(error)),
   });
 
   const reactMutation = useMutation({
     mutationFn: ({ messageId, emoji }) =>
       reactToMessage(conversationId, messageId, emoji),
-    onError: (error) => alert(getErrorMessage(error)),
+    onError: (error) => toast.error(getErrorMessage(error)),
   });
 
   const createGroupMutation = useMutation({
@@ -270,7 +271,7 @@ const MessagesPage = () => {
       queryClient.invalidateQueries({ queryKey: ['chats'] });
       navigate(`/dashboard/messages/${newChat._id}`);
     },
-    onError: (error) => alert(getErrorMessage(error)),
+    onError: (error) => toast.error(getErrorMessage(error)),
   });
 
   const handleSendMessage = ({ text, attachments = [], replyTo = null }) => {
@@ -304,7 +305,7 @@ const MessagesPage = () => {
       queryClient.invalidateQueries({ queryKey: ['chats'] });
       navigate(`/dashboard/messages/${response._id}`);
     } catch (error) {
-      alert(getErrorMessage(error));
+      toast.error(getErrorMessage(error));
     }
   };
 

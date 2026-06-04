@@ -8,6 +8,7 @@ import { toggleLike, deletePost, editPost } from "../services/PostService";
 import { getCurrentUser } from "../services/AuthService";
 import getErrorMessage from "../hooks/useErrorToast";
 import ImageViewer from "./ImageViewer";
+import { toast } from "react-toastify";
 
 const PostCard = ({ post, variant = "default", isOwnPost = false, onLike, onDelete, onEdit, }) => {
   const queryClient = useQueryClient();
@@ -43,13 +44,13 @@ const PostCard = ({ post, variant = "default", isOwnPost = false, onLike, onDele
       queryClient.invalidateQueries({ queryKey: ['following', currentUser?._id] });
       queryClient.invalidateQueries({ queryKey: ['feed'] });
     },
-    onError: (error) => alert(getErrorMessage(error)),
+    onError: (error) => toast.error(getErrorMessage(error)),
   });
 
   const messageMutation = useMutation({
     mutationFn: () => startDirectChat(authorId),
     onSuccess: (chat) => navigate(`/dashboard/messages/${chat._id}`),
-    onError: (error) => alert(getErrorMessage(error)),
+    onError: (error) => toast.error(getErrorMessage(error)),
   });
 
   const deleteMutation = useMutation({
@@ -59,7 +60,7 @@ const PostCard = ({ post, variant = "default", isOwnPost = false, onLike, onDele
       queryClient.invalidateQueries({ queryKey: ['userPosts'] });
       onDelete?.(post.id);
     },
-    onError: (error) => alert(getErrorMessage(error)),
+    onError: (error) => toast.error(getErrorMessage(error)),
   });
 
   const editMutation = useMutation({
@@ -69,7 +70,7 @@ const PostCard = ({ post, variant = "default", isOwnPost = false, onLike, onDele
       queryClient.invalidateQueries({ queryKey: ['userPosts'] });
       setEditing(false);
     },
-    onError: (error) => alert(getErrorMessage(error)),
+    onError: (error) => toast.error(getErrorMessage(error)),
   });
 
   const handleAuthorClick = () => {
@@ -257,7 +258,7 @@ const PostCard = ({ post, variant = "default", isOwnPost = false, onLike, onDele
         <button
           onClick={() => {
             navigator.clipboard?.writeText(`${window.location.origin}/dashboard/posts/${post.id}`);
-            alert("Link copied!");
+            toast.success("Link copied!");
           }}
           className="flex items-center gap-1.5 hover:text-green-600 transition cursor-pointer"
         >

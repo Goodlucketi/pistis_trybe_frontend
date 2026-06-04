@@ -3,6 +3,7 @@ import { User, Upload } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getMe, updateMe } from '../../../services/UserService';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 export default function EditProfileForm() {
   const queryClient = useQueryClient();
@@ -39,7 +40,7 @@ export default function EditProfileForm() {
       navigate('/dashboard/profile');
     },
     onError: (error) => {
-      alert(error?.message || 'Failed to update profile. Please try again.');
+      toast.error(error?.message || 'Failed to update profile. Please try again.');
     },
   });
 

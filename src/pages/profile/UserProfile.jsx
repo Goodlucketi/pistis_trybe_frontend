@@ -7,6 +7,7 @@ import { startDirectChat } from "../../services/ChatService";
 import ActivityContent from "../../community/components/profile/ActivityContent";
 import ImageViewer from "../../shared/ImageViewer";
 import getErrorMessage from "../../hooks/useErrorToast";
+import { toast } from "react-toastify";
 
 export default function UserProfile() {
   const { userId } = useParams();
@@ -52,13 +53,13 @@ export default function UserProfile() {
       queryClient.invalidateQueries({ queryKey: ['followers', userId] });
       queryClient.invalidateQueries({ queryKey: ['feed'] });
     },
-    onError: (error) => alert(getErrorMessage(error)),
+    onError: (error) => toast.error(getErrorMessage(error)),
   });
 
   const messageMutation = useMutation({
     mutationFn: () => startDirectChat(userId),
     onSuccess: (chat) => navigate(`/dashboard/messages/${chat._id}`),
-    onError: (error) => alert(getErrorMessage(error)),
+    onError: (error) => toast.error(getErrorMessage(error)),
   });
 
   if (isLoading) {

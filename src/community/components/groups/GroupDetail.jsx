@@ -6,6 +6,7 @@ import { getGroupById, joinLeaveGroup, getGroupPosts, createPost } from "../../.
 import { getMe } from "../../../services/UserService";
 import getErrorMessage from "../../../hooks/useErrorToast";
 import PostCard from "../../../shared/PostCard";
+import { toast } from "react-toastify";
 
 const GroupDetail = () => {
   const { id } = useParams();
@@ -42,7 +43,7 @@ const GroupDetail = () => {
   const joinMutation = useMutation({
     mutationFn: () => joinLeaveGroup(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["group", id] }),
-    onError: (e) => alert(getErrorMessage(e)),
+    onError: (e) => toast.error(getErrorMessage(e)),
   });
 
   const createPostMutation = useMutation({
@@ -57,7 +58,7 @@ const GroupDetail = () => {
       setNewPost("");
       setAttachments([]);
     },
-    onError: (e) => alert(getErrorMessage(e)),
+    onError: (e) => toast.error(getErrorMessage(e)),
   });
 
   const likeMutation = useMutation({
@@ -65,6 +66,7 @@ const GroupDetail = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["group-posts", id] });
     },
+    onError: (e) => toast.error(getErrorMessage(e)),
   });
 
   const deletePostMutation = useMutation({
@@ -72,6 +74,7 @@ const GroupDetail = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["group-posts", id] });
     },
+    onError: (e) => toast.error(getErrorMessage(e)),
   });
 
   const handleFileSelect = (e) => {
@@ -334,13 +337,13 @@ const GroupMembersTab = ({ groupId, isAdmin, currentUserId }) => {
   const kickMutation = useMutation({
     mutationFn: (userId) => kickMember({ groupId, userId }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["group-members", groupId] }),
-    onError: (e) => alert(e?.message || "Failed to remove member"),
+    onError: (e) => toast.error(e?.message || "Failed to remove member"),
   });
 
   const promoteMutation = useMutation({
     mutationFn: (userId) => promoteMember({ groupId, userId }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["group-members", groupId] }),
-    onError: (e) => alert(e?.message || "Failed to promote member"),
+    onError: (e) => toast.error(e?.message || "Failed to promote member"),
   });
 
   const members = membersData?.members || [];

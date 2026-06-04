@@ -1,4 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 import Login from "./pages/home/Login";
 import Register from "./pages/home/Register";
 import ForgotPassword from "./pages/home/ForgotPwd";
@@ -23,50 +26,64 @@ import GroupSettings from "./community/components/groups/GroupSettings";
 
 function App() {
   return (
-    <Routes>
-      {/* Public Auth Routes */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
+    <>
+      <Routes>
+        {/* Public Auth Routes */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
-      {/* Protected Dashboard Routes WITH Navbar */}
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <AppLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route path="profile" element={<Profile />} />
-        <Route path="profile/settings" element={<ProfileSetting />} />
-        <Route path="profile/edit" element={<EditProfile />} />
-        <Route path="feed" element={<Feed />} />
-        <Route path="bible" element={<BibleReader />} />
-        <Route path="groups" element={<Groups />} />
-        <Route path="groups/:id" element={<GroupDetail />} />
-        <Route path="groups/:id/members" element={<GroupMembers />} />
-        <Route path="groups/:id/settings" element={<GroupSettings />} />
-        <Route path="users/:userId" element={<UserProfile />} />
-      </Route>
+        {/* Protected Dashboard Routes WITH Navbar */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <AppLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="profile" element={<Profile />} />
+          <Route path="profile/settings" element={<ProfileSetting />} />
+          <Route path="profile/edit" element={<EditProfile />} />
+          <Route path="feed" element={<Feed />} />
+          <Route path="bible" element={<BibleReader />} />
+          <Route path="groups" element={<Groups />} />
+          <Route path="groups/:id" element={<GroupDetail />} />
+          <Route path="groups/:id/members" element={<GroupMembers />} />
+          <Route path="groups/:id/settings" element={<GroupSettings />} />
+          <Route path="users/:userId" element={<UserProfile />} />
+        </Route>
 
-      {/* Protected Messages Routes WITHOUT Navbar */}
-      <Route
-        path="/dashboard/messages"
-        element={
-          <ProtectedRoute>
-            <PlainLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Messages />} />
-        <Route path=":conversationId" element={<Messages />} />
-      </Route>
+        {/* Protected Messages Routes WITHOUT Navbar */}
+        <Route
+          path="/dashboard/messages"
+          element={
+            <ProtectedRoute>
+              <PlainLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Messages />} />
+          <Route path=":conversationId" element={<Messages />} />
+        </Route>
 
-      {/* Default Redirect */}
-      <Route path="*" element={<Navigate to="/login" replace />} />
-    </Routes>
+        {/* Default Redirect */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+      <ToastContainer 
+        position="top-right" 
+        autoClose={5000} 
+        hideProgressBar={false} 
+        newestOnTop
+        closeOnClick 
+        rtl={false} 
+        pauseOnFocusLoss 
+        draggable 
+        pauseOnHover
+        theme="coloured" 
+      />
+    </>
   );
 }
 

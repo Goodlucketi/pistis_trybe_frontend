@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { createGroup } from "../../../services/GroupService";
 import getErrorMessage from "../../../hooks/useErrorToast";
+import { toast } from "react-toastify";
 
 const CreateGroupModal = ({ isOpen, onClose }) => {
   const queryClient = useQueryClient();
@@ -31,7 +32,7 @@ const CreateGroupModal = ({ isOpen, onClose }) => {
       setCoverPreview(null);
       navigate(`/dashboard/groups/${group._id}`);
     },
-    onError: (e) => alert(getErrorMessage(e)),
+    onError: (e) => toast.error(getErrorMessage(e)),
   });
 
   const handleCoverChange = (e) => {

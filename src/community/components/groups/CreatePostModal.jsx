@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getMe } from "../../../services/UserService";
 import { createPost } from "../../../services/PostService";
 import getErrorMessage from "../../../hooks/useErrorToast";
+import { toast } from "react-toastify";
 
 const CreatePostModal = ({ isOpen, onClose }) => {
   const queryClient = useQueryClient();
@@ -23,7 +24,7 @@ const CreatePostModal = ({ isOpen, onClose }) => {
       setMediaFiles([]);
       onClose();
     },
-    onError: (e) => alert(getErrorMessage(e)),
+    onError: (e) => toast.error(getErrorMessage(e)),
   });
 
   const handleFiles = (files) => {

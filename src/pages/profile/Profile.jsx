@@ -7,6 +7,7 @@ import { getMe } from '../../services/UserService';
 import { getFollowers, getFollowing } from '../../services/UserService';
 import { getUserPosts } from '../../services/UserService';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'react-toastify';
 
 export default function Profile() {
   const [activeTab, setActiveTab] = useState("feed");
@@ -47,7 +48,7 @@ export default function Profile() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-posts", currentUser._id] });
     },
-    onError: (e) => alert(getErrorMessage(e)),
+    onError: (e) => toast.error(getErrorMessage(e)),
   });
 
   

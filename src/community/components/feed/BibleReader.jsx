@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { toast } from 'react-toastify';
 import axios from "axios";
 import {
   BookOpen, BookMarked, StickyNote, ChevronDown, ChevronUp,
@@ -116,22 +117,22 @@ export default function BibleReader() {
       setNoteContent("");
       setShowNoteForm(false);
     },
-    onError: (e) => alert(getErrorMessage(e)),
+    onError: (e) => toast.error(getErrorMessage(e)),
   });
 
   const deleteNoteMutation = useMutation({
     mutationFn: deleteNote,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notes"] }),
-    onError: (e) => alert(getErrorMessage(e)),
+    onError: (e) => toast.error(getErrorMessage(e)),
   });
 
   const shareNoteMutation = useMutation({
     mutationFn: shareNoteToFeed,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["feed"] });
-      alert("Note shared to your feed! 🙏");
+      toast.success("Note shared to your feed! 🙏");
     },
-    onError: (e) => alert(getErrorMessage(e)),
+    onError: (e) => toast.error(getErrorMessage(e)),
   });
 
   const goToPrevChapter = () => {

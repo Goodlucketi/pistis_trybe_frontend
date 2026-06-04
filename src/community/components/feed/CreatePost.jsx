@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Card from "../ui/Card";
 import { getMe } from "../../../services/UserService";
 import { createPost } from "../../../services/PostService";
+import { toast } from "react-toastify";
 
 const MAX_FILES = 5;
 
@@ -29,7 +30,7 @@ const CreatePost = () => {
       setMediaFiles([]);
     },
     onError: (error) => {
-      alert(error?.message || "Failed to create post. Please try again.");
+      toast.error(error?.message || "Failed to create post. Please try again.");
     },
   });
 
