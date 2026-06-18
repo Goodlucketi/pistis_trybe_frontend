@@ -1,39 +1,54 @@
+// useSocket.js - replace your file
 import { useEffect, useRef, useCallback } from "react";
 import { io } from "socket.io-client";
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_BASE_URL?.replace("/v1", "") || "https://pistis-trybe-backend.onrender.com";
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL ||   "https://pistis-trybe-backend.onrender.com";
 
 let socketInstance = null;
 
 const getSocket = () => {
-  if (socketInstance?.connected) return socketInstance;
-
   const token = localStorage.getItem("accessToken");
-  if (!token) return null;
-
-  if (socketInstance) {
-    socketInstance.disconnect();
-    socketInstance = null;
+  if (!token) {
+    console.warn("No accessToken - socket not created");
+    return null;
   }
+
+  if (socketInstance?.connected) return socketInstance;
+  
+  // don't recreate if connecting
+  if (socketInstance && !socketInstance.connected) return socketInstance;
 
   socketInstance = io(SOCKET_URL, {
     auth: { token },
-    transports: ["websocket"],
+    transports: ["websocket", "polling"], // add polling for Render
     reconnection: true,
-    reconnectionAttempts: 5,
-    reconnectionDelay: 2000,
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 1000,
+    timeout: 20000,
+  });
+
+  socketInstance.on("connect", () => {
+    console.log("✅ Socket connected:", socketInstance.id);
   });
 
   socketInstance.on("connect_error", (err) => {
-    console.warn("Socket connect error:", err.message);
+    console.error("Socket error:", err.message);
+    // if token expired, disconnect
+    if (err.message.includes("Authentication")) {
+      disconnectSocket();
+    }
+  });
+
+  socketInstance.on("disconnect", (reason) => {
+    console.log("Socket disconnected:", reason);
   });
 
   return socketInstance;
 };
 
-// FIX: Exposed so AuthService can call it on logout
 export const disconnectSocket = () => {
   if (socketInstance) {
+    socketInstance.removeAllListeners();
     socketInstance.disconnect();
     socketInstance = null;
   }
@@ -44,29 +59,26 @@ export const useSocket = () => {
 
   useEffect(() => {
     socketRef.current = getSocket();
-    return () => {};
+    
+    // keep alive for Render free tier
+    const pingInterval = setInterval(() => {
+      if (socketRef.current?.connected) {
+        socketRef.current.emit("ping");
+      }
+    }, 25000);
+
+    return () => {
+      clearInterval(pingInterval);
+      // don't disconnect on unmount - keep singleton
+    };
   }, []);
 
-  const joinConversation = useCallback((conversationId) => {
-    socketRef.current?.emit("join:conversation", conversationId);
-  }, []);
-
-  const leaveConversation = useCallback((conversationId) => {
-    socketRef.current?.emit("leave:conversation", conversationId);
-  }, []);
-
-  const sendMessage = useCallback((payload) => {
-    socketRef.current?.emit("send_message", payload);
-  }, []);
-
-  const startTyping = useCallback((conversationId) => {
-    socketRef.current?.emit("typing:start", conversationId);
-  }, []);
-
-  const stopTyping = useCallback((conversationId) => {
-    socketRef.current?.emit("typing:stop", conversationId);
-  }, []);
-
+  // ... rest of your methods stay same
+  const joinConversation = useCallback((id) => socketRef.current?.emit("join:conversation", id), []);
+  const leaveConversation = useCallback((id) => socketRef.current?.emit("leave:conversation", id), []);
+  const sendMessage = useCallback((p) => socketRef.current?.emit("send_message", p), []);
+  const startTyping = useCallback((id) => socketRef.current?.emit("typing:start", id), []);
+  const stopTyping = useCallback((id) => socketRef.current?.emit("typing:stop", id), []);
   const on = useCallback((event, handler) => {
     const socket = socketRef.current || getSocket();
     if (!socket) return () => {};

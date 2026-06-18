@@ -270,7 +270,6 @@ const MessagesPage = () => {
   };
 
   const chatWindowProps = activeConversation ? {
-    key: activeConversation.id,
     conversation: activeConversation,
     messages: activeMessages,
     currentUser: normalizedCurrentUser,
@@ -290,7 +289,7 @@ const MessagesPage = () => {
     return (
       <div className="h-[100dvh] w-full flex flex-col overflow-hidden">
         {conversationId && activeConversation && chatWindowProps ? (
-          <ChatWindow {...chatWindowProps} />
+          <ChatWindow key={activeConversation.id} {...chatWindowProps} />
         ) : (
           <ConversationList {...sharedProps} />
         )}
@@ -301,7 +300,7 @@ const MessagesPage = () => {
   return (
     <div className="flex h-[100dvh] p-2 overflow-hidden">
       <ConversationList {...sharedProps} />
-      {activeConversation && chatWindowProps ? <ChatWindow {...chatWindowProps} /> : <EmptyChatState />}
+      {activeConversation && chatWindowProps ? <ChatWindow key={activeConversation.id} {...chatWindowProps} /> : <EmptyChatState />}
     </div>
   );
 };
