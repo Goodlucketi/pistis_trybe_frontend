@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import ConversationList from "../../community/components/messages/ConversationList";
 import ChatWindow from "../../community/components/messages/ChatWindow";
@@ -7,8 +7,7 @@ import EmptyChatState from "../../community/components/messages/EmptyChatState";
 import { getChats, getMessages, sendMessage, deleteMessage, reactToMessage, createGroupChat } from "../../services/ChatService";
 import { getMe } from "../../services/UserService";
 import { useSocket } from "../../hooks/useSocket";
-import getErrorMessage from "../../hooks/useErrorToast";
-import { toast } from "react-toastify";
+import { toast } from "react-toastify"
 
 const MessagesPage = () => {
   const { conversationId } = useParams();
@@ -16,23 +15,21 @@ const MessagesPage = () => {
   const queryClient = useQueryClient();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [localMessages, setLocalMessages] = useState({});
-  const { joinConversation, leaveConversation, on } = useSocket();
+  const [onlineUserIds, setOnlineUserIds] = useState(new Set());
+  const { joinConversation, leaveConversation, sendMessage: socketSend, on } = useSocket();
 
-  const { data: currentUser } = useQuery({
-    queryKey: ['me'],
-    queryFn: getMe,
-  });
+  const { data: currentUser } = useQuery({ queryKey: ["me"], queryFn: getMe });
 
   const { data: conversations = [], isLoading: chatsLoading } = useQuery({
-    queryKey: ['chats'],
+    queryKey: ["chats"],
     queryFn: getChats,
     refetchInterval: 30000,
   });
 
   const { data: messagesData } = useQuery({
-    queryKey: ['messages', conversationId],
+    queryKey: ["messages", conversationId],
     queryFn: () => getMessages(conversationId),
-    enabled:!!conversationId,
+    enabled: !!conversationId,
     staleTime: 0,
   });
 
@@ -44,61 +41,64 @@ const MessagesPage = () => {
       senderName: msg.senderId?.fullName || "",
       senderAvatar: msg.senderId?.avatarUrl || null,
       text: msg.body || "",
-      attachments: msg.mediaUrl? [{ id: msg._id, url: msg.mediaUrl, type: "image/jpeg", name: "attachment" }] : [],
+      attachments: msg.mediaUrl ? [{ id: msg._id, url: msg.mediaUrl, type: "image/jpeg", name: "attachment" }] : [],
       timestamp: msg.createdAt || msg.timestamp || new Date().toISOString(),
-      status: msg.isRead? "read" : "sent",
+      status: msg.isRead ? "read" : "sent",
       reactions: msg.reactions || {},
       replyTo: msg.replyTo || null,
-      forwardedFrom: msg.forwardedFrom || null,
     };
   }, []);
 
+  // Sync fetched messages to local state
   useEffect(() => {
-    if (!messagesData?.messages ||!conversationId) return;
+    if (!messagesData?.messages || !conversationId) return;
     setLocalMessages((prev) => {
       const fetched = messagesData.messages.map(normalizeMessage).filter(Boolean);
       const existing = prev[conversationId] || [];
       const fetchedIds = new Set(fetched.map((m) => m.id));
-      const localOnly = existing.filter((m) =>!fetchedIds.has(m?.id));
-      return {
-       ...prev,
-        [conversationId]: [...fetched,...localOnly],
-      };
+      const localOnly = existing.filter((m) => m?._optimistic && !fetchedIds.has(m?.id));
+      return { ...prev, [conversationId]: [...fetched, ...localOnly] };
     });
   }, [messagesData, conversationId, normalizeMessage]);
 
+  // Join / leave conversation room
   useEffect(() => {
     if (!conversationId) return;
     joinConversation(conversationId);
-    queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
+    queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
     return () => leaveConversation(conversationId);
   }, [conversationId, joinConversation, leaveConversation, queryClient]);
 
+  // Receive messages via socket
   useEffect(() => {
     const off = on("receive_message", (message) => {
       const chatId = message.chatId?.toString() || conversationId;
       const senderId = message.senderId?._id || message.senderId;
-
       if (senderId === currentUser?._id) {
-        queryClient.invalidateQueries({ queryKey: ['chats'] });
+        // Replace our optimistic message with the real one
+        const normalized = normalizeMessage(message);
+        if (!normalized) return;
+        setLocalMessages((prev) => {
+          const msgs = prev[chatId] || [];
+          const optimisticIdx = msgs.findIndex((m) => m?._optimistic);
+          if (optimisticIdx !== -1) {
+            const updated = [...msgs];
+            updated[optimisticIdx] = normalized;
+            return { ...prev, [chatId]: updated };
+          }
+          return prev;
+        });
+        queryClient.invalidateQueries({ queryKey: ["chats"] });
         return;
       }
-
       const normalized = normalizeMessage(message);
       if (!normalized) return;
-
       setLocalMessages((prev) => {
         const existing = prev[chatId] || [];
-        const alreadyExists = existing.some((m) => m?.id === normalized.id);
-        if (alreadyExists) return prev;
-        return {
-         ...prev,
-          [chatId]: [...existing, normalized],
-        };
+        if (existing.some((m) => m?.id === normalized.id)) return prev;
+        return { ...prev, [chatId]: [...existing, normalized] };
       });
-
-      queryClient.invalidateQueries({ queryKey: ['messages', chatId] });
-      queryClient.invalidateQueries({ queryKey: ['chats'] });
+      queryClient.invalidateQueries({ queryKey: ["chats"] });
     });
     return off;
   }, [on, conversationId, queryClient, currentUser?._id, normalizeMessage]);
@@ -107,21 +107,14 @@ const MessagesPage = () => {
     const off = on("new_message_notification", ({ conversationId: chatId, message }) => {
       const senderId = message.senderId?._id || message.senderId;
       if (senderId === currentUser?._id) return;
-
       const normalized = normalizeMessage(message);
       if (!normalized) return;
-
       setLocalMessages((prev) => {
         const existing = prev[chatId] || [];
-        const alreadyExists = existing.some((m) => m?.id === normalized.id);
-        if (alreadyExists) return prev;
-        return {
-         ...prev,
-          [chatId]: [...existing, normalized],
-        };
+        if (existing.some((m) => m?.id === normalized.id)) return prev;
+        return { ...prev, [chatId]: [...existing, normalized] };
       });
-
-      queryClient.invalidateQueries({ queryKey: ['chats'] });
+      queryClient.invalidateQueries({ queryKey: ["chats"] });
     });
     return off;
   }, [on, currentUser?._id, queryClient, normalizeMessage]);
@@ -129,19 +122,29 @@ const MessagesPage = () => {
   useEffect(() => {
     const off = on("message_deleted", ({ messageId }) => {
       setLocalMessages((prev) => ({
-       ...prev,
-        [conversationId]: (prev[conversationId] || []).filter((m) => m?.id!== messageId),
+        ...prev,
+        [conversationId]: (prev[conversationId] || []).filter((m) => m?.id !== messageId),
       }));
     });
     return off;
   }, [on, conversationId]);
 
   useEffect(() => {
+    const offOnline = on("user:online", ({ userId }) => {
+      setOnlineUserIds((prev) => new Set([...prev, userId]));
+    });
+    const offOffline = on("user:offline", ({ userId }) => {
+      setOnlineUserIds((prev) => { const next = new Set(prev); next.delete(userId); return next; });
+    });
+    return () => { offOnline(); offOffline(); };
+  }, [on]);
+
+  useEffect(() => {
     const off = on("message_reaction_updated", ({ messageId, reactions }) => {
       setLocalMessages((prev) => ({
-       ...prev,
+        ...prev,
         [conversationId]: (prev[conversationId] || []).map((m) =>
-          m?.id === messageId? {...m, reactions } : m
+          m?.id === messageId ? { ...m, reactions } : m
         ),
       }));
     });
@@ -150,167 +153,94 @@ const MessagesPage = () => {
 
   const normalizeConversation = (conv) => {
     if (!conv) return null;
-    const otherParticipant = conv.participants?.find((p) => p?._id!== currentUser?._id);
+    const other = conv.participants?.find((p) => p?._id !== currentUser?._id);
     return {
       id: conv._id,
       type: conv.type || "direct",
-      name: conv.type === "group"? conv.name : otherParticipant?.fullName || "Unknown",
-      avatar: conv.type === "group"? conv.coverUrl : otherParticipant?.avatarUrl,
-      participants: (conv.participants || []).map((p) => ({
-        id: p?._id,
-        name: p?.fullName || p?.email || "Unknown",
-        avatar: p?.avatarUrl,
-        role: "member",
-      })).filter(p => p.id),
-      lastMessage: conv.lastMessage && conv.lastMessage.timestamp
-       ? {
-            text: conv.lastMessage.text || "",
-            timestamp: conv.lastMessage.timestamp,
-            senderId: conv.lastMessage.senderId,
-          }
-        : null,
+      name: conv.type === "group" ? conv.name : other?.fullName || "Unknown",
+      avatar: conv.type === "group" ? conv.coverUrl : other?.avatarUrl,
+      participants: (conv.participants || []).map((p) => ({ id: p?._id, name: p?.fullName || p?.email || "Unknown", avatar: p?.avatarUrl, role: "member" })).filter((p) => p.id),
+      lastMessage: conv.lastMessage?.timestamp ? { text: conv.lastMessage.text || "", timestamp: conv.lastMessage.timestamp, senderId: conv.lastMessage.senderId } : null,
       unreadCount: conv.unreadCount || 0,
       createdAt: conv.createdAt,
     };
   };
 
-  const normalizedConversations = currentUser
-   ? conversations.map(normalizeConversation).filter(Boolean)
-    : [];
-
+  const normalizedConversations = currentUser ? conversations.map(normalizeConversation).filter(Boolean) : [];
   const activeConversation = normalizedConversations.find((c) => c?.id === conversationId);
+  const activeMessages = (localMessages[conversationId] || (messagesData?.messages || []).map(normalizeMessage)).filter((m) => m && m.timestamp);
+  const contacts = normalizedConversations.flatMap((c) => c?.participants || []).filter((p, i, self) => p?.id && p.id !== currentUser?._id && self.findIndex((u) => u?.id === p.id) === i);
+  const normalizedCurrentUser = currentUser ? { id: currentUser._id, name: currentUser.fullName || currentUser.email, avatar: currentUser.avatarUrl } : null;
 
-  const activeMessages = (localMessages[conversationId]
-   ? localMessages[conversationId]
-    : (messagesData?.messages || []).map(normalizeMessage)
-  ).filter(m => m && m.timestamp);
+  // FIX: Route through socket for text messages to avoid duplicate saves
+  // HTTP only used for file uploads (which socket doesn't handle binary)
+  const handleSendMessage = useCallback(({ text, attachments = [], replyTo = null }) => {
+    if (!conversationId) return;
+    const hasFile = attachments?.length > 0;
 
-  const contacts = normalizedConversations
-   .flatMap((c) => c?.participants || [])
-   .filter(
-      (p, index, self) =>
-        p?.id && p.id!== currentUser?._id &&
-        self.findIndex((u) => u?.id === p.id) === index
-    );
+    // Optimistic message
+    const optimistic = {
+      id: `optimistic-${Date.now()}`,
+      senderId: currentUser?._id,
+      senderName: currentUser?.fullName,
+      senderAvatar: currentUser?.avatarUrl,
+      text: text || "",
+      attachments: [],
+      timestamp: new Date().toISOString(),
+      status: "sent",
+      reactions: {},
+      replyTo: replyTo || null,
+      _optimistic: true,
+    };
+    setLocalMessages((prev) => ({ ...prev, [conversationId]: [...(prev[conversationId] || []), optimistic] }));
 
-  const normalizedCurrentUser = currentUser
-   ? {
-        id: currentUser._id,
-        name: currentUser.fullName || currentUser.email,
-        avatar: currentUser.avatarUrl,
-      }
-    : null;
-
-  const sendMutation = useMutation({
-    mutationFn: ({ chatId, body, replyTo, file }) =>
-      sendMessage(chatId, { body, replyTo, file }),
-    onMutate: ({ body, replyTo }) => {
-      const optimisticMsg = {
-        id: `optimistic-${Date.now()}`,
-        senderId: currentUser?._id,
-        senderName: currentUser?.fullName,
-        senderAvatar: currentUser?.avatarUrl,
-        text: body || "",
-        attachments: [],
-        timestamp: new Date().toISOString(),
-        status: "sent",
-        reactions: {},
-        replyTo: replyTo || null,
-        forwardedFrom: null,
-        _optimistic: true,
-      };
-      setLocalMessages((prev) => ({
-       ...prev,
-        [conversationId]: [...(prev[conversationId] || []), optimisticMsg],
-      }));
-      return { optimisticMsg };
-    },
-    onSuccess: (newMsg, _, context) => {
-      const normalized = normalizeMessage(newMsg);
-      if (!normalized) return;
-      setLocalMessages((prev) => ({
-       ...prev,
-        [conversationId]: (prev[conversationId] || []).map((m) =>
-          m?.id === context?.optimisticMsg?.id? normalized : m
-        ),
-      }));
-      queryClient.invalidateQueries({ queryKey: ['chats'] });
-    },
-    onError: (error, _, context) => {
-      setLocalMessages((prev) => ({
-       ...prev,
-        [conversationId]: (prev[conversationId] || []).filter(
-          (m) => m?.id!== context?.optimisticMsg?.id
-        ),
-      }));
-      toast.error(getErrorMessage(error));
-    },
-  });
+    if (hasFile) {
+      // Use HTTP for file uploads — socket can't handle binary
+      sendMessage(conversationId, { body: text, replyTo, file: attachments[0]?.file })
+        .then((msg) => {
+          const normalized = normalizeMessage(msg);
+          setLocalMessages((prev) => ({
+            ...prev,
+            [conversationId]: (prev[conversationId] || []).map((m) => (m?.id === optimistic.id ? normalized : m)),
+          }));
+          queryClient.invalidateQueries({ queryKey: ["chats"] });
+        })
+        .catch(() => {
+          setLocalMessages((prev) => ({ ...prev, [conversationId]: (prev[conversationId] || []).filter((m) => m?.id !== optimistic.id) }));
+          toast.error("Failed to send file");
+        });
+    } else {
+      // Text messages go through socket — socket handler saves to DB and broadcasts
+      socketSend({ conversationId, body: text || "", replyTo });
+    }
+  }, [conversationId, currentUser, socketSend, normalizeMessage, queryClient]);
 
   const deleteMutation = useMutation({
     mutationFn: (messageId) => deleteMessage(conversationId, messageId),
     onSuccess: (_, messageId) => {
-      setLocalMessages((prev) => ({
-       ...prev,
-        [conversationId]: (prev[conversationId] || []).filter((m) => m?.id!== messageId),
-      }));
+      setLocalMessages((prev) => ({ ...prev, [conversationId]: (prev[conversationId] || []).filter((m) => m?.id !== messageId) }));
     },
-    onError: (error) => toast.error(getErrorMessage(error)),
+    onError: () => toast.error("Failed to delete message"),
   });
 
   const reactMutation = useMutation({
-    mutationFn: ({ messageId, emoji }) =>
-      reactToMessage(conversationId, messageId, emoji),
-    onError: (error) => toast.error(getErrorMessage(error)),
+    mutationFn: ({ messageId, emoji }) => reactToMessage(conversationId, messageId, emoji),
+    onError: () => toast.error("Failed to react"),
   });
 
   const createGroupMutation = useMutation({
-    mutationFn: ({ name, participantIds }) =>
-      createGroupChat({ name, participantIds }),
-    onSuccess: (newChat) => {
-      queryClient.invalidateQueries({ queryKey: ['chats'] });
-      navigate(`/dashboard/messages/${newChat._id}`);
-    },
-    onError: (error) => toast.error(getErrorMessage(error)),
+    mutationFn: ({ name, participantIds }) => createGroupChat({ name, participantIds }),
+    onSuccess: (newChat) => { queryClient.invalidateQueries({ queryKey: ["chats"] }); navigate(`/dashboard/messages/${newChat._id}`); },
+    onError: () => toast.error("Failed to create group chat"),
   });
-
-  const handleSendMessage = ({ text, attachments = [], replyTo = null }) => {
-    if (!conversationId) return;
-    const file = attachments?.[0] || null;
-    sendMutation.mutate({ chatId: conversationId, body: text, replyTo, file });
-  };
-
-  const handleReact = (messageId, emoji) => {
-    reactMutation.mutate({ messageId, emoji });
-  };
-
-  const handleDelete = (messageId) => {
-    deleteMutation.mutate(messageId);
-  };
-
-  const handleForward = (message, targetConvId) => {
-    sendMutation.mutate({
-      chatId: targetConvId,
-      body: message?.text || "",
-      replyTo: null,
-      file: null,
-    });
-  };
 
   const handleStartDirectChat = async (user) => {
     try {
-      const response = await import("../../services/ChatService").then(m =>
-        m.startDirectChat(user._id)
-      );
-      queryClient.invalidateQueries({ queryKey: ['chats'] });
+      const { startDirectChat } = await import("../../services/ChatService");
+      const response = await startDirectChat(user._id || user.id);
+      queryClient.invalidateQueries({ queryKey: ["chats"] });
       navigate(`/dashboard/messages/${response._id}`);
-    } catch (error) {
-      toast.error(getErrorMessage(error));
-    }
-  };
-
-  const handleCreateGroup = ({ name, participantIds }) => {
-    createGroupMutation.mutate({ name, participantIds });
+    } catch { toast.error("Could not start chat"); }
   };
 
   useEffect(() => {
@@ -318,8 +248,6 @@ const MessagesPage = () => {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
-
-  const goBack = () => navigate("/dashboard/messages");
 
   if (!normalizedCurrentUser) {
     return (
@@ -329,37 +257,42 @@ const MessagesPage = () => {
     );
   }
 
+  const sharedProps = {
+    conversations: normalizedConversations,
+    currentUser: normalizedCurrentUser,
+    activeId: conversationId,
+    onSelectConversation: (conv) => navigate(`/dashboard/messages/${conv.id}`),
+    contacts,
+    onCreateGroup: ({ name, participantIds }) => createGroupMutation.mutate({ name, participantIds }),
+    onStartDirectChat: handleStartDirectChat,
+    isLoading: chatsLoading,
+    onlineUserIds,
+  };
+
+  const chatWindowProps = activeConversation ? {
+    key: activeConversation.id,
+    conversation: activeConversation,
+    messages: activeMessages,
+    currentUser: normalizedCurrentUser,
+    onSendMessage: handleSendMessage,
+    onReact: (messageId, emoji) => reactMutation.mutate({ messageId, emoji }),
+    onForward: (message, targetId) => handleSendMessage({ text: message?.text || "", replyTo: null }),
+    onBack: () => navigate("/dashboard/messages"),
+    isMobile,
+    onDelete: (messageId) => deleteMutation.mutate(messageId),
+    allConversations: normalizedConversations,
+    setConversations: () => {},
+    contacts,
+    onCreateGroup: ({ name, participantIds }) => createGroupMutation.mutate({ name, participantIds }),
+  } : null;
+
   if (isMobile) {
     return (
       <div className="h-[100dvh] w-full flex flex-col overflow-hidden">
-        {conversationId && activeConversation? (
-          <ChatWindow
-            key={activeConversation.id}
-            conversation={activeConversation}
-            messages={activeMessages}
-            currentUser={normalizedCurrentUser}
-            onSendMessage={handleSendMessage}
-            onReact={handleReact}
-            onForward={handleForward}
-            onBack={goBack}
-            isMobile={isMobile}
-            onDelete={handleDelete}
-            allConversations={normalizedConversations}
-            setConversations={() => {}}
-            contacts={contacts}
-            onCreateGroup={handleCreateGroup}
-          />
+        {conversationId && activeConversation && chatWindowProps ? (
+          <ChatWindow {...chatWindowProps} />
         ) : (
-          <ConversationList
-            conversations={normalizedConversations}
-            currentUser={normalizedCurrentUser}
-            activeId={conversationId}
-            onSelectConversation={(conv) => navigate(`/dashboard/messages/${conv.id}`)}
-            contacts={contacts}
-            onCreateGroup={handleCreateGroup}
-            onStartDirectChat={handleStartDirectChat}
-            isLoading={chatsLoading}
-          />
+          <ConversationList {...sharedProps} />
         )}
       </div>
     );
@@ -367,36 +300,8 @@ const MessagesPage = () => {
 
   return (
     <div className="flex h-[100dvh] p-2 overflow-hidden">
-      <ConversationList
-        conversations={normalizedConversations}
-        currentUser={normalizedCurrentUser}
-        activeId={conversationId}
-        onSelectConversation={(conv) => navigate(`/dashboard/messages/${conv.id}`)}
-        contacts={contacts}
-        onCreateGroup={handleCreateGroup}
-        onStartDirectChat={handleStartDirectChat}
-        isLoading={chatsLoading}
-      />
-      {activeConversation? (
-        <ChatWindow
-          key={activeConversation.id}
-          conversation={activeConversation}
-          messages={activeMessages}
-          currentUser={normalizedCurrentUser}
-          onSendMessage={handleSendMessage}
-          onReact={handleReact}
-          onForward={handleForward}
-          onBack={goBack}
-          isMobile={isMobile}
-          onDelete={handleDelete}
-          allConversations={normalizedConversations}
-          setConversations={() => {}}
-          contacts={contacts}
-          onCreateGroup={handleCreateGroup}
-        />
-      ) : (
-        <EmptyChatState />
-      )}
+      <ConversationList {...sharedProps} />
+      {activeConversation && chatWindowProps ? <ChatWindow {...chatWindowProps} /> : <EmptyChatState />}
     </div>
   );
 };

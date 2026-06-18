@@ -60,23 +60,32 @@ const ActivityContent = ({
           key={post._id || post.id}
           post={{
             id: post._id || post.id,
+            _id: post._id || post.id, 
+            authorId: post.authorId,
             author: {
               name: post.authorId?.fullName || post.author || "Unknown",
               avatar: post.authorId?.avatarUrl || post.avatar || null,
             },
             content: post.body || post.content,
+            body: post.body || post.content,
             image: post.mediaUrls?.[0] || post.image || null,
             images: post.mediaUrls || (post.image ? [post.image] : []),
+            mediaUrls: post.mediaUrls || [], 
             time: post.createdAt
               ? new Date(post.createdAt).toLocaleDateString()
               : post.time,
-            likes: post.likes?.length ?? post.likes ?? 0,
-            isLiked: post.likes?.some(likeId => likeId === currentUser?._id) || false,
+            createdAt: post.createdAt, 
+            likes: post.likes || [], 
+            isLiked: post.likes?.some(likeId => likeId?.toString() === currentUser?._id?.toString()) || false,
             comments: post.comments || 0,
+            commentsCount: post.commentsCount || 0,
             hashtags: post.hashtags || [],
           }}
           variant="profile"
-          isOwnPost={true}
+          isOwnPost={ 
+            post.authorId?._id?.toString() === currentUser?._id?.toString() ||
+            post.authorId?.toString() === currentUser?._id?.toString()
+        }
           onLike={() => onLike?.(post._id || post.id)}
           onDelete={() => onDelete?.(post._id || post.id)}
         />

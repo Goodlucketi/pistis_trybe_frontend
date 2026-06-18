@@ -3,6 +3,7 @@ import RightPanel from "./components/layouts/RightPanel";
 import MobileTopBar from "./components/layouts/MobileTopBar";
 import MobileBottomNav from "./components/layouts/MobileBottomNav";
 import Devotional from "./components/layouts/Devotional";
+import ErrorBoundary from "../shared/ErrorBoundary";
 import { useState, useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 
@@ -17,64 +18,61 @@ const AppLayout = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Hide right panel when on groups or messages page
   const hideRightPanel =
     location.pathname.startsWith("/dashboard/groups") ||
     location.pathname.startsWith("/dashboard/messages");
 
-  // Hide devotional on mobile for profile + messages
-  const hideDevotionalOnMobile = [
-    '/dashboard/profile',
-    '/dashboard/messages'
-  ].some(path => location.pathname.startsWith(path));
-
-  const showDevotionalMobile = isMobile && !hideDevotionalOnMobile;
-  const showDevotionalDesktop =!isMobile;
+  const hideDevotionalOnMobile = ["/dashboard/profile", "/dashboard/messages"].some((p) =>
+    location.pathname.startsWith(p)
+  );
 
   return (
     <div className="min-h-screen bg-[#F5F6FA]">
-      {/* Mobile Top Bar */}
       <MobileTopBar onMenuClick={() => setIsMobileSidebarOpen(true)} />
 
-      <div className="flex max-w-[1280px] mx-auto gap-6 px-4 md:px-6 pt-4 lg:pt-6">
-        {/* DESKTOP SIDEBAR */}
+      <div className="flex w-full mx-auto gap-6 px-4 md:px-10 pt-4 lg:pt-6">
+        {/* Desktop Sidebar */}
         <div className="hidden lg:block shrink-0">
-          <Sidebar isMobile={false} />
+          <ErrorBoundary message="Sidebar failed to load.">
+            <Sidebar isMobile={false} />
+          </ErrorBoundary>
         </div>
 
-        {/* MOBILE SIDEBAR OVERLAY */}
-        <Sidebar
-          isMobile={true}
-          isOpen={isMobileSidebarOpen}
-          onClose={() => setIsMobileSidebarOpen(false)}
-        />
+        {/* Mobile Sidebar Overlay */}
+        {/* <Sidebar isMobile isOpen={isMobileSidebarOpen} onClose={() => setIsMobileSidebarOpen(false)} /> */}
 
-        {/* MAIN CONTENT */}
-        <main className={`flex-1 ${hideRightPanel? "max-w-full" : "max-w-[1280px]"} mx-auto min-h-[calc(100vh-2rem)] pb-20 lg:pb-0`}>
-          {/* Mobile Devotional - conditional */}
-          {showDevotionalMobile && (
+        {/* Main Content */}
+        <main className={`flex-1 ${hideRightPanel ? "max-w-full" : "max-w-[1280px]"} mx-auto min-h-[calc(100vh-2rem)] pb-20 lg:pb-0`}>
+          {/* Mobile Devotional */}
+          {isMobile && !hideDevotionalOnMobile && (
             <div className="lg:hidden mb-4">
-              <Devotional />
+              <ErrorBoundary message="Devotional failed to load.">
+                <Devotional />
+              </ErrorBoundary>
             </div>
           )}
 
-          <Outlet />
+          {/* FIX: Wrap page content in ErrorBoundary so a crash is contained */}
+          <ErrorBoundary message="This page encountered an error. Try refreshing.">
+            <Outlet />
+          </ErrorBoundary>
         </main>
 
-       {/* RIGHT PANEL + Desktop Devotional */}
+        {/* Right Panel */}
         {!hideRightPanel && (
           <div className="hidden xl:block shrink-0">
-            <RightPanel />
+            <ErrorBoundary message="Right panel failed to load.">
+              <RightPanel />
+            </ErrorBoundary>
           </div>
         )}
       </div>
 
-      {/* Mobile Bottom Navigation */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30">
         <MobileBottomNav />
       </div>
     </div>
   );
-}
+};
 
 export default AppLayout;

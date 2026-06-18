@@ -45,7 +45,9 @@ export default function UserProfile() {
     enabled: !!userId,
   });
 
-  const isFollowing = followersData?.followers?.some((f) => f._id === currentUser?._id);
+  const isFollowing = followersData?.followers?.some(
+    (f) => f._id?.toString() === currentUser?._id?.toString()
+  );
 
   const followMutation = useMutation({
     mutationFn: () => toggleFollow(userId),
@@ -74,7 +76,7 @@ export default function UserProfile() {
     return <div className="text-center py-20 text-gray-400">User not found.</div>;
   }
 
-  const isOwnProfile = currentUser?._id === userId;
+  const isOwnProfile = currentUser?._id?.toString() === userId?.toString();
 
   return (
     <div className="relative min-h-screen pb-12">
@@ -90,7 +92,6 @@ export default function UserProfile() {
         <div className="border mb-3 border-[#E8E8E8] bg-white p-4 sm:p-6 shadow rounded-2xl">
           <div className="flex justify-between items-start gap-4">
             <div className="flex flex-col gap-4">
-              {/* Avatar — tap to view full size */}
               <div
                 className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gray-200 overflow-hidden shrink-0 ${
                   profileUser.avatarUrl ? "cursor-pointer hover:opacity-90 transition" : ""
@@ -154,15 +155,23 @@ export default function UserProfile() {
             <h2 className="text-lg font-bold text-gray-900">Posts</h2>
           </div>
           <ActivityContent
-            activeTab="feed"
+            activeTab={activeTab}
             posts={postsData?.posts || []}
+            currentUser={currentUser}
             isLoading={postsLoading}
+            onLike={() => {
+              queryClient.invalidateQueries({ queryKey: ['userPosts', userId] });
+            }}
+            onDelete={() => {
+              queryClient.invalidateQueries({ queryKey: ['userPosts', userId] });
+            }}
           />
         </div>
       </div>
 
-      {/* Avatar viewer */}
+      {/* Avatar viewer - moved INSIDE the main return */}
       <ImageViewer
+        key={`${viewerOpen}-0`}
         images={profileUser?.avatarUrl ? [profileUser.avatarUrl] : []}
         startIndex={0}
         isOpen={viewerOpen}

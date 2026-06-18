@@ -6,7 +6,7 @@ import AuthCard from "../../auth/AuthCard";
 import Input from "../../shared/Input";
 import Button from "../../shared/Btn";
 import useForm from "../../hooks/UseForm";
-import { registerUser, googleRegister } from "../../services/AuthService";
+import { registerUser, googleLogin } from "../../services/AuthService";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -51,7 +51,7 @@ const Register = () => {
     try {
       setLoading(true);
       setServerError("");
-      await googleRegister(credentialResponse.credential);
+      await googleLogin(credentialResponse.credential);
       setSuccessMessage("Account created with Google!");
       setTimeout(() => navigate("/dashboard/feed"), 1500);
     } catch (error) {

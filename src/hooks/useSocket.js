@@ -1,97 +1,78 @@
 import { useEffect, useRef, useCallback } from "react";
 import { io } from "socket.io-client";
 
-const SOCKET_URL = import.meta.env.VITE_API_URL?.replace("/v1", "") || "https://pistis-trybe-backend.onrender.com";
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_BASE_URL?.replace("/v1", "") || "https://pistis-trybe-backend.onrender.com";
 
 let socketInstance = null;
 
-export const getSocket = () => socketInstance;
+const getSocket = () => {
+  if (socketInstance?.connected) return socketInstance;
 
-export const useSocket = () => {
-  const socketRef = useRef(null);
+  const token = localStorage.getItem("accessToken");
+  if (!token) return null;
 
-  useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    if (!token) return;
+  if (socketInstance) {
+    socketInstance.disconnect();
+    socketInstance = null;
+  }
 
-    if (!socketInstance) {
-      socketInstance = io(SOCKET_URL, {
-        auth: { token },
-        transports: ["websocket"],
-        reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
-      });
-    }
+  socketInstance = io(SOCKET_URL, {
+    auth: { token },
+    transports: ["websocket"],
+    reconnection: true,
+    reconnectionAttempts: 5,
+    reconnectionDelay: 2000,
+  });
 
-    socketRef.current = socketInstance;
+  socketInstance.on("connect_error", (err) => {
+    console.warn("Socket connect error:", err.message);
+  });
 
-    socketInstance.on("connect", () => {
-      console.log("🟢 Socket connected:", socketInstance.id);
-    });
-
-    socketInstance.on("disconnect", () => {
-      console.log("🔴 Socket disconnected");
-    });
-
-    socketInstance.on("connect_error", (err) => {
-      console.error("Socket connection error:", err.message);
-    });
-
-    return () => {
-      // Don't disconnect on unmount — keep connection alive across pages
-    };
-  }, []);
-
-  const joinConversation = useCallback((conversationId) => {
-    socketInstance?.emit("join:conversation", conversationId);
-  }, []);
-
-  const leaveConversation = useCallback((conversationId) => {
-    socketInstance?.emit("leave:conversation", conversationId);
-  }, []);
-
-  const sendMessage = useCallback((payload) => {
-    socketInstance?.emit("send_message", payload);
-  }, []);
-
-  const reactToMessage = useCallback((payload) => {
-    socketInstance?.emit("react_message", payload);
-  }, []);
-
-  const deleteMessage = useCallback((payload) => {
-    socketInstance?.emit("delete_message", payload);
-  }, []);
-
-  const startTyping = useCallback((conversationId) => {
-    socketInstance?.emit("typing:start", conversationId);
-  }, []);
-
-  const stopTyping = useCallback((conversationId) => {
-    socketInstance?.emit("typing:stop", conversationId);
-  }, []);
-
-  const on = useCallback((event, handler) => {
-    socketInstance?.on(event, handler);
-    return () => socketInstance?.off(event, handler);
-  }, []);
-
-  return {
-    socket: socketRef.current,
-    joinConversation,
-    leaveConversation,
-    sendMessage,
-    reactToMessage,
-    deleteMessage,
-    startTyping,
-    stopTyping,
-    on,
-  };
+  return socketInstance;
 };
 
+// FIX: Exposed so AuthService can call it on logout
 export const disconnectSocket = () => {
   if (socketInstance) {
     socketInstance.disconnect();
     socketInstance = null;
   }
+};
+
+export const useSocket = () => {
+  const socketRef = useRef(null);
+
+  useEffect(() => {
+    socketRef.current = getSocket();
+    return () => {};
+  }, []);
+
+  const joinConversation = useCallback((conversationId) => {
+    socketRef.current?.emit("join:conversation", conversationId);
+  }, []);
+
+  const leaveConversation = useCallback((conversationId) => {
+    socketRef.current?.emit("leave:conversation", conversationId);
+  }, []);
+
+  const sendMessage = useCallback((payload) => {
+    socketRef.current?.emit("send_message", payload);
+  }, []);
+
+  const startTyping = useCallback((conversationId) => {
+    socketRef.current?.emit("typing:start", conversationId);
+  }, []);
+
+  const stopTyping = useCallback((conversationId) => {
+    socketRef.current?.emit("typing:stop", conversationId);
+  }, []);
+
+  const on = useCallback((event, handler) => {
+    const socket = socketRef.current || getSocket();
+    if (!socket) return () => {};
+    socket.on(event, handler);
+    return () => socket.off(event, handler);
+  }, []);
+
+  return { joinConversation, leaveConversation, sendMessage, startTyping, stopTyping, on };
 };

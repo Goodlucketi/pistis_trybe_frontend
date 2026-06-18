@@ -6,7 +6,7 @@ const PlainLayout = () => {
   return (
     <div className="h-screen w-screen bg-gray-50">
       {/* Center container with max-width for desktop */}
-      <div className="h-full p-4 w-full lg:max-w-[1280px] lg:mx-auto flex overflow-hidden">
+      <div className="h-full p-8 w-full lg:w-full lg:mx-auto flex overflow-hidden">
         {/* Desktop Sidebar */}
         <div className="hidden lg:block lg:py-2">
           <Sidebar />

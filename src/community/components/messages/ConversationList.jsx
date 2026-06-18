@@ -13,6 +13,7 @@ const ConversationList = ({
   onCreateGroup,
   onStartDirectChat,
   isLoading = false,
+  onlineUserIds = new Set(),
 }) => {
   const [activeFilter, setActiveFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -20,7 +21,7 @@ const ConversationList = ({
   const [showNewChat, setShowNewChat] = useState(false);
 
   const filteredConversations = useMemo(() => {
-    let filtered = conversations.filter(Boolean); // ← remove null conversations
+    let filtered = conversations.filter(Boolean);
 
     if (activeFilter === "unread") {
       filtered = filtered.filter((c) => (c?.unreadCount || 0) > 0);
@@ -42,22 +43,14 @@ const ConversationList = ({
       });
     }
 
-    // ← SAFER SORT: check timestamp exists before using
     return filtered.sort((a, b) => {
-      const aTime = new Date(
-        a?.lastMessage?.timestamp || a?.createdAt || 0
-      ).getTime();
-      const bTime = new Date(
-        b?.lastMessage?.timestamp || b?.createdAt || 0
-      ).getTime();
+      const aTime = new Date(a?.lastMessage?.timestamp || a?.createdAt || 0).getTime();
+      const bTime = new Date(b?.lastMessage?.timestamp || b?.createdAt || 0).getTime();
       return bTime - aTime;
     });
   }, [conversations, activeFilter, searchQuery, currentUser?.id]);
 
-  const unreadTotal = conversations.reduce(
-    (sum, c) => sum + (c?.unreadCount || 0),
-    0
-  );
+  const unreadTotal = conversations.reduce((sum, c) => sum + (c?.unreadCount || 0), 0);
 
   const filters = [
     { key: "all", label: "All" },
@@ -67,29 +60,22 @@ const ConversationList = ({
 
   return (
     <div className="w-full lg:w-80 lg:border-r lg:border-gray-200 bg-white flex flex-col h-full overflow-hidden">
-      {/* Header */}
       <div className="flex-shrink-0 p-4 my-2">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-gray-900">Messages</h2>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowNewChat(true)}
-              className="p-2 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition-colors"
-              title="New Direct Message"
-            >
+            <button onClick={() => setShowNewChat(true)}
+              className="p-2 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition-colors" title="New Direct Message">
               <MessageCircle className="w-4 h-4" />
             </button>
-            <button
-              onClick={() => setShowCreateGroup(true)}
-              className="p-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors"
-              title="New Group"
-            >
+            <button onClick={() => setShowCreateGroup(true)}
+              className="p-2 bg-[#401667] text-white rounded-full hover:bg-[#2e1048] transition-colors" title="New Group">
               <Plus className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        <div className="relative mb-4">
+        <div className="relative mb-3">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
@@ -102,15 +88,10 @@ const ConversationList = ({
 
         <div className="flex gap-2">
           {filters.map((filter) => (
-            <button
-              key={filter.key}
-              onClick={() => setActiveFilter(filter.key)}
+            <button key={filter.key} onClick={() => setActiveFilter(filter.key)}
               className={`flex-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                activeFilter === filter.key
-                  ? "bg-purple-600 text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
+                activeFilter === filter.key ? "bg-purple-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}>
               {filter.label}
               {filter.count > 0 && (
                 <span className={`ml-1.5 ${activeFilter === filter.key ? "text-white" : "text-gray-500"}`}>
@@ -122,7 +103,6 @@ const ConversationList = ({
         </div>
       </div>
 
-      {/* List */}
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
           <div className="flex justify-center py-10">
@@ -141,6 +121,7 @@ const ConversationList = ({
               currentUser={currentUser}
               isActive={conv?.id === activeId}
               onClick={() => onSelectConversation?.(conv)}
+              onlineUserIds={onlineUserIds}
             />
           ))
         )}
@@ -152,10 +133,7 @@ const ConversationList = ({
           onClose={() => setShowCreateGroup(false)}
           contacts={contacts}
           currentUser={currentUser}
-          onCreateGroup={(newGroup) => {
-            onCreateGroup(newGroup);
-            setShowCreateGroup(false);
-          }}
+          onCreateGroup={(newGroup) => { onCreateGroup(newGroup); setShowCreateGroup(false); }}
         />
       )}
 

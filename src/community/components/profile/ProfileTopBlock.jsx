@@ -131,6 +131,7 @@ export default function ProfileTopBlock({ user }) {
 
       {/* Avatar full-screen viewer */}
       <ImageViewer
+        key={`${viewerOpen}-${0}`} 
         images={user?.avatar ? [user.avatar] : []}
         startIndex={0}
         isOpen={viewerOpen}

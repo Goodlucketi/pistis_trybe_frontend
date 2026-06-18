@@ -43,6 +43,7 @@ function App() {
             </ProtectedRoute>
           }
         >
+          <Route index element={<Navigate to="feed" replace />} />
           <Route path="profile" element={<Profile />} />
           <Route path="profile/settings" element={<ProfileSetting />} />
           <Route path="profile/edit" element={<EditProfile />} />
@@ -81,7 +82,7 @@ function App() {
         pauseOnFocusLoss 
         draggable 
         pauseOnHover
-        theme="coloured" 
+        theme="colored" 
       />
     </>
   );

@@ -1,102 +1,95 @@
 import { useState } from "react";
-
+import { useNavigate, useSearchParams } from "react-router-dom";
 import AuthLayout from "../../auth/AuthLayout";
 import AuthCard from "../../auth/AuthCard";
 import Input from "../../shared/Input";
 import Button from "../../shared/Btn";
 import useForm from "../../hooks/UseForm";
-
-import { forgotPwd } from "../../services/AuthService";
-
-import { useNavigate } from "react-router-dom";
+import { resetPwd } from "../../services/AuthService";
 
 const ResetPassword = () => {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get("token") || "";
+  const email = searchParams.get("email") || "";
 
-    const [loading, setLoading] = useState(false);
-    const [serverError, setServerError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [serverError, setServerError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
-    const validate = (values) => {
-        const errors = {};
-        if (!values.email) errors.email = "Email is required";
-        if (!values.password) errors.password = "Password is required";
-        return errors;
-    };
+  const validate = (values) => {
+    const errors = {};
+    if (!values.newPassword) errors.newPassword = "Password is required";
+    else if (values.newPassword.length < 8) errors.newPassword = "At least 8 characters";
+    else if (!/\d/.test(values.newPassword)) errors.newPassword = "Must contain a number";
+    else if (!/[^A-Za-z0-9]/.test(values.newPassword)) errors.newPassword = "Must contain a special character";
+    if (!values.confirmPassword) errors.confirmPassword = "Please confirm your password";
+    else if (values.confirmPassword !== values.newPassword) errors.confirmPassword = "Passwords do not match";
+    return errors;
+  };
 
-    const { values, errors, handleChange, handleSubmit } = useForm(
-        { email: "", password: "" },
-        validate
-    );
+  const { values, errors, handleChange, handleSubmit } = useForm(
+    { newPassword: "", confirmPassword: "" },
+    validate
+  );
 
+  const onSubmit = async () => {
+    if (!token || !email) {
+      setServerError("Invalid reset link. Please request a new one.");
+      return;
+    }
+    try {
+      setLoading(true);
+      setServerError("");
+      await resetPwd({ token, email, newPassword: values.newPassword });
+      setSuccessMsg("Password reset successfully!");
+      setTimeout(() => navigate("/login"), 2000);
+    } catch (error) {
+      setServerError(error?.message || "Reset failed. The link may have expired.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const onSubmit = async () => {
-        try {
-        setLoading(true);
-        setServerError("");
-
-        const data = await forgotPwd(values);
-
-        // Example: store token
-        if (data.accessToken) {
-            localStorage.setItem("accessToken", data.accessToken);
-        }
-
-        console.log("Password Status:", data);
-
-        } catch (error) {
-        setServerError(error.message || "Password failed");
-        } finally {
-        setLoading(false);
-        }
-    };
-
-    return (
-        <AuthLayout>
-         <AuthCard title="Reset Password" message="Create a new password for your account" >
-        
-            {serverError && (
-            <div className="mb-4 text-sm text-red-500 text-center">
-                {serverError}
-            </div>
-            )}
-
-            <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="flex flex-col gap-5"
-            >
-                <Input
-                    name="password"
-                    type="email"
-                    placeholder="Password"
-                    value={values.password}
-                    onChange={handleChange}
-                    error={errors.password}
-                />
-
-                <p className="text-sm text-gray-500">
-                    Password must be at least <span className="font-semibold text-purple-900"> 8 characters </span>long containing a <span className="font-semibold text-purple-900">number</span> and a <span className="font-semibold text-purple-900">special character</span> 
-                </p>
-                
-                <Input
-                    name="password"
-                    type="email"
-                    placeholder="Confirm new password"
-                    value={values.password}
-                    onChange={handleChange}
-                    error={errors.password}
-                />
-
-
-
-                <Button type="submit" loading={loading}>
-                    Save Password
-                </Button>
-            </form>
-           
-           
-        </AuthCard>
-        </AuthLayout>
-    );
+  return (
+    <AuthLayout>
+      <AuthCard title="Reset Password" message="Create a new password for your account">
+        {serverError && (
+          <div className="mb-4 text-sm text-red-500 text-center">{serverError}</div>
+        )}
+        {successMsg ? (
+          <div className="mb-4 text-sm text-green-600 bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+            {successMsg} Redirecting to login...
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
+            <Input
+              name="newPassword"
+              type="password"
+              placeholder="New Password"
+              value={values.newPassword}
+              onChange={handleChange}
+              error={errors.newPassword}
+            />
+            <p className="text-xs text-gray-500 -mt-3">
+              At least <strong>8 characters</strong> with a <strong>number</strong> and <strong>special character</strong>.
+            </p>
+            <Input
+              name="confirmPassword"
+              type="password"
+              placeholder="Confirm New Password"
+              value={values.confirmPassword}
+              onChange={handleChange}
+              error={errors.confirmPassword}
+            />
+            <Button type="submit" loading={loading}>
+              Save Password
+            </Button>
+          </form>
+        )}
+      </AuthCard>
+    </AuthLayout>
+  );
 };
 
 export default ResetPassword;
