@@ -26,7 +26,7 @@ api.interceptors.response.use(
     const newToken = response.headers["x-access-token"];
     if (newToken) {
       localStorage.setItem("accessToken", newToken);
-      console.log(response.data.message);
+      // console.log(response.data.message);
     }
     return response;
   },
@@ -49,6 +49,11 @@ api.interceptors.response.use(
       localStorage.removeItem("user");
       window.location.href = "/login";
       return Promise.reject({ message: "Session expired. Please login again.", status });
+    }
+
+    // Handle 403 - Not Admin
+    if (error.response.status === 403) {
+      toast.error(error.response.data?.message || "Access denied");
     }
 
     // Return a clean error object with the backend's message

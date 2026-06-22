@@ -1,36 +1,62 @@
 import Card from "../ui/Card";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
-
-const fetchDailyVerse = async () => {
-  const { data } = await axios.get('https://beta.ourmanna.com/api/v1/get/?format=json&order=daily');
-  return {
-    text: data.verse.details.text,
-    reference: data.verse.details.reference,
-  };
-};
+import { getTodaysDevotional } from "../../../services/DevotionalService";
 
 const Devotional = () => {
   const navigate = useNavigate();
 
-  const { data: verse } = useQuery({
-    queryKey: ['daily-verse-card'],
-    queryFn: fetchDailyVerse,
-    staleTime: 1000 * 60 * 60 * 6, // 6 hours
+  const { data: devotional, isLoading } = useQuery({
+    queryKey: ["devotional-today"],
+    queryFn: getTodaysDevotional,
+    staleTime: 60 * 60 * 1000, // 1 hour
   });
 
   const handleReadMore = (e) => {
     e.preventDefault();
-    // Navigate to Bible page with devotional tab open
-    navigate('/dashboard/bible?tab=devotional');
+    navigate("/dashboard/bible?tab=devotional");
   };
+
+  if (isLoading) {
+    return (
+      <Card className="px-4 py-6 bg-[#4B1D83] text-white relative animate-pulse">
+        <h3 className="font-semibold text-sm mb-2">Daily Devotional</h3>
+        <div className="space-y-2">
+          <div className="h-3 bg-white/20 rounded w-full" />
+          <div className="h-3 bg-white/20 rounded w-4/5" />
+        </div>
+      </Card>
+    );
+  }
+
+  if (!devotional) {
+    return (
+      <Card className="px-4 py-6 bg-[#4B1D83] text-white relative">
+        <h3 className="font-semibold text-sm mb-2">Daily Devotional</h3>
+        <p className="text-xs text-gray-200">No devotional for today yet. Check back soon!</p>
+      </Card>
+    );
+  }
+
+  const dateLabel = new Date(devotional.date + "T00:00:00").toLocaleDateString("en-US", {
+    weekday: "long", month: "long", day: "numeric",
+  });
 
   return (
     <Card className="px-4 py-6 bg-[#4B1D83] text-white relative">
-      <h3 className="font-semibold text-sm mb-2">Daily Devotional</h3>
-      <p className="text-xs text-gray-200 leading-relaxed line-clamp-3">
-        {verse? `${verse.text} — ${verse.reference}` : 'Loading devotional...'}
+      <div className="mb-2">
+        <h3 className="font-semibold text-sm">Daily Devotional</h3>
+        <p className="text-[10px] text-white/60">{dateLabel}</p>
+      </div>
+
+      {devotional.topic && (
+        <p className="font-bold text-white text-sm leading-snug mb-2">
+          {devotional.topic}
+        </p>
+      )}
+
+      <p className="text-xs text-gray-200 leading-relaxed line-clamp-3 mb-3">
+        "{devotional.bibleVerse}" — {devotional.bibleVerseReference}
       </p>
 
       <div className="btn absolute bottom-2 right-8">

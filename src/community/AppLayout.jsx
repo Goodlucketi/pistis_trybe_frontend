@@ -22,7 +22,7 @@ const AppLayout = () => {
     location.pathname.startsWith("/dashboard/groups") ||
     location.pathname.startsWith("/dashboard/messages");
 
-  const hideDevotionalOnMobile = ["/dashboard/profile", "/dashboard/messages"].some((p) =>
+  const hideDevotionalOnMobile = ["/dashboard/profile", "/dashboard/messages", "/dashboard/bible", "/dashboard/groups"].some((p) =>
     location.pathname.startsWith(p)
   );
 

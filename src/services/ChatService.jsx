@@ -11,7 +11,7 @@ export const startDirectChat = async (targetUserId) => {
 };
 
 export const createGroupChat = async ({ name, participantIds }) => {
-  const response = await api.post("/chats/group", { name, participantIds });
+  const response = await api.post("/chats/groups", { name, participantIds });
   return response.data.data;
 };
 

@@ -32,8 +32,13 @@ const Login = () => {
     try {
       setLoading(true);
       setServerError("");
-      await googleLogin(credentialResponse.credential);
-      navigate("/dashboard/feed");
+      const { user } = await googleLogin(credentialResponse.credential); // make sure this returns same shape
+      
+      if (user?.role === "admin" || user?.role === "super_admin") {
+        navigate("/admin");
+      } else {
+        navigate("/dashboard/feed");
+      }
     } catch (error) {
       setServerError(error?.message || "Google login failed");
     } finally {
@@ -49,8 +54,14 @@ const Login = () => {
     try {
       setLoading(true);
       setServerError("");
-      await loginUser(values);
-      navigate("/dashboard/feed");
+      const { user } = await loginUser(values); // destructure user from return
+      console.log("LOGIN USER OBJECT:", user); // you already log this in service
+      
+      if (user?.role === "admin" || user?.role === "super_admin") {
+        navigate("/admin");
+      } else {
+        navigate("/dashboard/feed");
+      }
     } catch (error) {
       setServerError(error?.message || "Login failed. Please check your credentials.");
     } finally {

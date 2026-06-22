@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { BIBLE_BOOKS, READING_PLANS, TRANSLATIONS, STREAM_COLORS } from "../../store/readingPlans";
 import { getNotes, createNote, deleteNote, shareNoteToFeed } from "../../../services/NoteService";
+import { getTodaysDevotional } from "../../../services/DevotionalService"; // <-- add this
 import getErrorMessage from "../../../hooks/useErrorToast";
 
 const fetchPassage = async ({ book, chapter, translation }) => {
@@ -20,40 +21,19 @@ const fetchPassage = async ({ book, chapter, translation }) => {
   return data;
 };
 
-// Free devotional API
-const fetchDailyDevotional = async () => {
-  const { data } = await axios.get('https://beta.ourmanna.com/api/v1/get/?format=json&order=daily');
-  return {
-    verse: data.verse.details.text,
-    reference: data.verse.details.reference,
-    version: data.verse.details.version,
-    devotional: data.verse.notice, // short devotional text
-    date: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
-  };
-};
+// REMOVE THIS OLD FUNCTION
+// const fetchDailyDevotional = async () => {... }
 
 export default function BibleReader() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // Read tab from URL:?tab=devotional
-  const [tab, setTab] = useState(searchParams.get('tab') || "read");
-
-  // Sync tab with URL
-  useEffect(() => {
-    setSearchParams({ tab }, { replace: true });
-  }, [tab, setSearchParams]);
-
-  // Listen for URL changes from outside
-  useEffect(() => {
-    const urlTab = searchParams.get('tab');
-    if (urlTab && urlTab!== tab) setTab(urlTab);
-  }, [searchParams]);
-
   // Reader state
   const [selectedBook, setSelectedBook] = useState("John");
   const [selectedChapter, setSelectedChapter] = useState(3);
+  const [selectedVerse, setSelectedVerse] = useState(null); // null = whole chapter
+  const [showVersePicker, setShowVersePicker] = useState(false);
   const [translation, setTranslation] = useState("kjv");
   const [showBookPicker, setShowBookPicker] = useState(false);
   const [showChapterPicker, setShowChapterPicker] = useState(false);
@@ -73,11 +53,73 @@ export default function BibleReader() {
   const currentBook = BIBLE_BOOKS.find((b) => b.name === selectedBook);
   const totalChapters = currentBook?.chapters || 1;
 
-  // Devotional query
+
+  // Read tab from URL:?tab=devotional
+  const [tab, setTab] = useState(searchParams.get('tab') || "read");
+
+  // Sync tab with URL
+  useEffect(() => {
+    setSearchParams({ tab }, { replace: true });
+    }, [tab, setSearchParams]);
+
+    // Listen for URL changes from outside
+    useEffect(() => {
+      const urlTab = searchParams.get('tab');
+      if (urlTab && urlTab!== tab) setTab(urlTab);
+    }, [searchParams]);
+
+    // reset when book/chapter changes
+    useEffect(() => {
+      setSelectedVerse(null); 
+    }, [selectedBook, selectedChapter]);
+
+
+    useEffect(() => {
+      const urlBook = searchParams.get('book');
+      const urlChapter = searchParams.get('chapter');
+      const urlVerse = searchParams.get('verse');
+      
+      if (urlBook) setSelectedBook(urlBook);
+      if (urlChapter) setSelectedChapter(parseInt(urlChapter));
+      if (urlVerse) {
+        setSelectedVerse(parseInt(urlVerse));
+        setTimeout(() => {
+          document.getElementById(`verse-${urlVerse}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 500);
+      }
+    }, []); // run once on mount
+
+    // Parse URL params on mount and when they change
+  useEffect(() => {
+    const urlBook = searchParams.get('book');
+    const urlChapter = searchParams.get('chapter');
+    const urlVerse = searchParams.get('verse');
+    const urlTab = searchParams.get('tab');
+
+    if (urlTab) setTab(urlTab);
+    if (urlBook) setSelectedBook(urlBook);
+    if (urlChapter) setSelectedChapter(parseInt(urlChapter));
+
+    // Set verse after passage loads so we can scroll
+    if (urlVerse) {
+      setSelectedVerse(parseInt(urlVerse));
+      // Delay scroll until verses are rendered
+      setTimeout(() => {
+        document.getElementById(`verse-${urlVerse}`)?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+      }, 600);
+    }
+  }, [searchParams]);
+
+
+  
+  // REPLACE DEVOTIONAL QUERY WITH YOUR ADMIN ONE
   const { data: devotional, isLoading: devoLoading } = useQuery({
     queryKey: ["devotional-daily"],
-    queryFn: fetchDailyDevotional,
-    staleTime: 1000 * 60 * 60 * 6, // 6 hours - devotionals change daily
+    queryFn: getTodaysDevotional, // <-- use your service
+    staleTime: 60 * 60 * 1000, // 1 hour
     enabled: tab === "devotional",
   });
 
@@ -170,6 +212,27 @@ export default function BibleReader() {
     setNoteContent("");
   };
 
+  // Helper to jump to verse from devotional
+  const jumpToVerse = (reference) => {
+  // Match "John 3:16", "Psalm 23:1-3", "Genesis 1:1" etc
+  const match = reference.match(/^(.+?)\s+(\d+):(\d+)/);
+
+  if (match) {
+    const book = match[1];
+    const chapter = match[2];
+    const verse = match[3];
+    // Pass verse in URL
+    navigate(`/dashboard/bible?tab=read&book=${encodeURIComponent(book)}&chapter=${chapter}&verse=${verse}`);
+  } else {
+    // Fallback if no verse in reference, just go to chapter
+    const chMatch = reference.match(/^(.+?)\s+(\d+)/);
+    if (chMatch) {
+      navigate(`/dashboard/bible?tab=read&book=${encodeURIComponent(chMatch[1])}&chapter=${chMatch[2]}`);
+    } else {
+      navigate('/dashboard/bible?tab=devotional');
+    }
+  }
+};
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
 
@@ -321,6 +384,48 @@ export default function BibleReader() {
                 </div>
               )}
             </div>
+            {/* Verse picker */}
+            <div className="relative">
+              <button
+                onClick={() => { 
+                  setShowVersePicker(!showVersePicker); 
+                  setShowBookPicker(false); 
+                  setShowChapterPicker(false); 
+                  setShowTranslation(false); 
+                }}
+                disabled={!passage?.verses?.length}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm font-medium hover:border-[#401667] transition disabled:opacity-50"
+              >
+                {selectedVerse? `v. ${selectedVerse}` : 'All verses'}
+                <ChevronDown className="w-3 h-3 text-gray-400" />
+              </button>
+              {showVersePicker && passage?.verses && (
+                <div className="absolute top-full left-0 mt-1 z-30 bg-white border border-gray-200 rounded-xl shadow-xl w-40 max-h-56 overflow-y-auto p-2">
+                  <button
+                    onClick={() => { setSelectedVerse(null); setShowVersePicker(false); }}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-purple-50 rounded-lg transition mb-1 ${!selectedVerse? "text-[#401667] font-semibold bg-purple-50" : "text-gray-700"}`}
+                  >
+                    All verses
+                  </button>
+                  <div className="grid grid-cols-4 gap-1">
+                    {passage.verses.map((v) => (
+                      <button
+                        key={v.verse}
+                        onClick={() => { 
+                          setSelectedVerse(v.verse); 
+                          setShowVersePicker(false);
+                          // Scroll to verse
+                          document.getElementById(`verse-${v.verse}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }}
+                        className={`py-1.5 text-xs rounded-lg transition ${selectedVerse === v.verse? "bg-[#401667] text-white" : "hover:bg-purple-50 text-gray-700"}`}
+                      >
+                        {v.verse}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Translation picker */}
             <div className="relative ml-auto">
@@ -366,14 +471,23 @@ export default function BibleReader() {
                     {TRANSLATIONS.find((t) => t.id === translation)?.short}
                   </span>
                 </h3>
-                <div className="text-gray-700 leading-8 text-sm sm:text- space-y-1">
+                <div className="text-gray-700 leading-8 text-sm space-y-2">
                   {passage.verses?.map((v) => (
-                    <span key={v.verse}>
-                      <sup className="text- text-[#401667] font-bold mr-1">{v.verse}</sup>
-                      {v.text}{" "}
-                    </span>
+                    <p 
+                      key={v.verse} 
+                      id={`verse-${v.verse}`}
+                      className={`flex gap-2 scroll-mt-20 rounded-lg transition-all ${
+                        selectedVerse === v.verse 
+                        ? "bg-purple-100 px-2 py-1 -mx-2 border-l-4 border-[#401667]" 
+                          : ""
+                      }`}
+                    >
+                      <sup className="text-xs text-[#401667] font-bold shrink-0 mt-1">{v.verse}</sup>
+                      <span className="flex-1">{v.text}</span>
+                    </p>
                   )) || <p className="whitespace-pre-line">{passage.text}</p>}
                 </div>
+
               </>
             )}
           </div>
@@ -448,7 +562,7 @@ export default function BibleReader() {
                     onClick={() => setPlanReading(r)}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl border text-sm transition ${
                       isActive
-                       ? "bg-[#401667] text-white border-[#401667]"
+                      ? "bg-[#401667] text-white border-[#401667]"
                         : "bg-white border-gray-200 text-gray-700 hover:border-[#401667] hover:text-[#401667]"
                     }`}
                   >
@@ -477,14 +591,22 @@ export default function BibleReader() {
                       {TRANSLATIONS.find((t) => t.id === translation)?.short}
                     </span>
                   </h3>
-                  <div className="text-gray-700 leading-8 text-sm space-y-1">
-                    {planPassage.verses?.map((v) => (
-                      <span key={v.verse}>
-                        <sup className="text- text-[#401667] font-bold mr-1">{v.verse}</sup>
-                        {v.text}{" "}
-                      </span>
-                    )) || <p className="whitespace-pre-line">{planPassage.text}</p>}
-                  </div>
+                 <div className="text-gray-700 leading-8 text-sm space-y-2">
+                  {passage.verses?.map((v) => (
+                    <p 
+                      key={v.verse} 
+                      id={`verse-${v.verse}`}
+                      className={`flex gap-2 scroll-mt-20 rounded-lg transition-all ${
+                        selectedVerse === v.verse 
+                        ? "bg-purple-100 px-2 py-1 -mx-2 border-l-4 border-[#401667]" 
+                          : ""
+                      }`}
+                    >
+                      <sup className="text-xs text-[#401667] font-bold shrink-0 mt-1">{v.verse}</sup>
+                      <span className="flex-1">{v.text}</span>
+                    </p>
+                  )) || <p className="whitespace-pre-line">{passage.text}</p>}
+                </div>
                 </>
               )}
             </div>
@@ -492,12 +614,20 @@ export default function BibleReader() {
         </div>
       )}
 
-      {/* ════════════ DEVOTIONAL TAB ════════════ */}
+      {/* ════════════ DEVOTIONAL TAB - UPDATED ════════════ */}
       {tab === "devotional" && (
         <div className="p-6">
           {devoLoading && (
             <div className="flex justify-center py-12">
               <div className="w-8 h-8 border-4 border-[#401667] border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
+
+          {!devotional &&!devoLoading && (
+            <div className="text-center py-12 text-gray-400 text-sm">
+              <Heart className="w-10 h-10 mx-auto mb-2 opacity-30" />
+              <p>No devotional for today yet.</p>
+              <p className="text-xs mt-1">Check back soon!</p>
             </div>
           )}
 
@@ -507,37 +637,55 @@ export default function BibleReader() {
                 <div className="inline-flex items-center justify-center w-12 h-12 bg-purple-100 rounded-full mb-3">
                   <Heart className="w-6 h-6 text-[#401667]" />
                 </div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide">{devotional.date}</p>
+                <p className="text-xs text-gray-500 uppercase tracking-wide">
+                  {new Date(devotional.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </p>
                 <h2 className="text-2xl font-bold text-gray-900 mt-2">Daily Devotional</h2>
               </div>
 
+              {/* Topic */}
+              {devotional.topic && (
+                <h3 className="text-xl font-bold text-center text-[#401667] mb-6">
+                  {devotional.topic}
+                </h3>
+              )}
+
+              {/* Bible Verse */}
               <div className="bg-purple-50 border-l-4 border-[#401667] rounded-r-xl p-5 mb-6">
                 <p className="text-lg text-gray-800 font-medium italic leading-relaxed">
-                  "{devotional.verse}"
+                  "{devotional.bibleVerse}"
                 </p>
                 <p className="text-sm text-[#401667] font-semibold mt-3">
-                  — {devotional.reference} ({devotional.version})
+                  — {devotional.bibleVerseReference}
                 </p>
               </div>
 
-              <div className="prose prose-sm max-w-none">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Reflection</h3>
+              {/* Exhortation/Message */}
+              <div className="prose prose-sm max-w-none mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Message</h3>
                 <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                  {devotional.devotional}
+                  {devotional.exhortation}
                 </p>
               </div>
+
+              {/* Scripture for Meditation */}
+              {devotional.scriptureForMeditation && (
+                <div className="bg-gray-50 rounded-xl p-5 mb-6">
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                    Scripture for Meditation
+                  </p>
+                  <p className="text-sm text-gray-700 italic leading-relaxed mb-2">
+                    "{devotional.scriptureForMeditation}"
+                  </p>
+                  <p className="text-xs text-[#401667] font-semibold">
+                    — {devotional.meditationReference}
+                  </p>
+                </div>
+              )}
 
               <div className="mt-8 pt-6 border-t border-gray-200 flex gap-3">
                 <button
-                  onClick={() => {
-                    setTab("read");
-                    // Try to parse reference like "John 3:16" to jump to that chapter
-                    const match = devotional.reference.match(/^(.+?)\s+(\d+):/);
-                    if (match) {
-                      setSelectedBook(match[1]);
-                      setSelectedChapter(parseInt(match[2]));
-                    }
-                  }}
+                  onClick={() => jumpToVerse(devotional.bibleVerseReference)}
                   className="flex-1 py-2.5 bg-[#401667] text-white rounded-xl text-sm font-medium hover:opacity-90 transition"
                 >
                   Read Full Chapter
@@ -546,8 +694,8 @@ export default function BibleReader() {
                   onClick={() => {
                     setTab("notes");
                     setShowNoteForm(true);
-                    setNoteTitle(`Devotional: ${devotional.reference}`);
-                    setNoteContent(`Verse: ${devotional.verse}\n\nReflection: ${devotional.devotional}`);
+                    setNoteTitle(`Devotional: ${devotional.topic || devotional.bibleVerseReference}`);
+                    setNoteContent(`Verse: ${devotional.bibleVerse}\n\nReflection: ${devotional.exhortation}`);
                   }}
                   className="flex-1 py-2.5 border border-gray-300 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition"
                 >

@@ -10,6 +10,16 @@ import AppLayout from "./community/AppLayout";
 import PlainLayout from "./community/PlainLayout";
 import ProtectedRoute from "./auth/ProtectedRoute";
 
+import AdminProtectedRoute from "./auth/AdminProtectedRoute";
+import AdminLayout from "./community/components/admin/AdminLayout";
+import AdminDashboard from "./pages/admin/dashboard/AdminDashboard";
+import AdminUsers from "./pages/admin/users/AdminUsers";
+import AdminUserDetail from "./pages/admin/users/AdminUserDetail";
+import AdminPosts from "./pages/admin/posts/AdminPosts";
+import AdminGroups from "./pages/admin/groups/AdminGroups";
+import AdminAnnouncements from "./pages/admin/announcements/AdminAnnouncements";
+import AdminDevotionals from "./pages/admin/devotionals/AdminDevotionals";
+
 import Profile from "./pages/profile/Profile";
 import ProfileSetting from "./pages/profile/settings/setProfile";
 import EditProfile from "./pages/profile/edit/editProfile";
@@ -33,6 +43,45 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+
+        <Route 
+          path="/admin" 
+          element={
+            <AdminProtectedRoute>
+              <AdminLayout />
+            </AdminProtectedRoute>
+          }
+        >
+          <Route 
+            index 
+            element={<AdminDashboard />} 
+          />
+          <Route 
+            path="users" 
+            element={<AdminUsers />} 
+          />
+          <Route 
+            path="users/:userId" 
+            element={<AdminUserDetail />} 
+          />
+          <Route 
+            path="posts" 
+            element={<AdminPosts />} 
+          />
+          <Route 
+            path="groups" 
+            element={<AdminGroups />} 
+          />
+          <Route 
+            path="announcements" 
+            element={<AdminAnnouncements />} 
+          />
+          <Route 
+            path="devotionals" 
+            element={<AdminDevotionals 
+            />} 
+          />
+        </Route>
 
         {/* Protected Dashboard Routes WITH Navbar */}
         <Route

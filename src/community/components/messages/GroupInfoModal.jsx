@@ -86,9 +86,9 @@ const GroupInfoModal = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md max-h- flex flex-col">
+      <div className="bg-white rounded-2xl w-full max-w-md h-full flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
+        <div className="flex items-center justify-between py-2 px-4 border-b">
           <h2 className="text-lg font-semibold">Group Info</h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
             <X className="w-5 h-5" />
@@ -97,11 +97,11 @@ const GroupInfoModal = ({
 
         <div className="flex-1 overflow-y-auto">
           {/* Group profile */}
-          <div className="p-6 text-center border-b">
+          <div className="px-6 py-2 text-center border-b">
             <div className="relative inline-block">
               <img
                 src={conversation.avatar || "/default-group.png"}
-                className="w-24 h-24 rounded-full object-cover mx-auto mb-3"
+                className="w-24 h-24 rounded-full object-cover mx-auto mb-2"
                 alt={conversation.name || "Group"}
               />
               {isAdmin && (
@@ -144,7 +144,7 @@ const GroupInfoModal = ({
           </div>
 
           {/* Members section */}
-          <div className="p-4">
+          <div className="p-2">
             <div className="flex items-center justify-between mb-3">
               <h4 className="font-semibold text-gray-900">Members</h4>
               {isAdmin && (

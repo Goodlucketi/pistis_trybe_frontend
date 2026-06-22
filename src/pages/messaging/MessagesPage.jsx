@@ -228,9 +228,19 @@ const MessagesPage = () => {
     onError: () => toast.error("Failed to react"),
   });
 
+  // const createGroupMutation = useMutation({
+  //   mutationFn: ({ name, participantIds }) => createGroupChat({ name, participantIds }),
+  //   onSuccess: (newChat) => { queryClient.invalidateQueries({ queryKey: ["chats"] }); navigate(`/dashboard/messages/${newChat._id}`); },
+  //   onError: () => toast.error("Failed to create group chat"),
+  // });
+
   const createGroupMutation = useMutation({
-    mutationFn: ({ name, participantIds }) => createGroupChat({ name, participantIds }),
-    onSuccess: (newChat) => { queryClient.invalidateQueries({ queryKey: ["chats"] }); navigate(`/dashboard/messages/${newChat._id}`); },
+    mutationFn: (payload) => createGroupChat(payload), // <-- pass entire payload
+    onSuccess: (newChat) => {
+      queryClient.invalidateQueries({ queryKey: ["chats"] });
+      navigate(`/dashboard/messages/${newChat._id}`);
+      // setShowCreateGroup(false); 
+    },
     onError: () => toast.error("Failed to create group chat"),
   });
 
