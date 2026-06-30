@@ -10,8 +10,15 @@ export const startDirectChat = async (targetUserId) => {
   return response.data.data;
 };
 
-export const createGroupChat = async ({ name, participantIds }) => {
-  const response = await api.post("/chats/groups", { name, participantIds });
+export const createGroupChat = async ({ name, participantIds, avatarFile }) => {
+  const formData = new FormData();
+  formData.append("name", name);
+  formData.append("participantIds", JSON.stringify(participantIds));
+  if (avatarFile) formData.append("file", avatarFile); // ← match "file" not "avatar"
+
+  const response = await api.post("/chats/groups", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
   return response.data.data;
 };
 
@@ -47,4 +54,15 @@ export const deleteMessage = async (chatId, messageId) => {
 export const reactToMessage = async (chatId, messageId, emoji) => {
   const response = await api.post(`/chats/${chatId}/messages/${messageId}/react`, { emoji });
   return response.data.data;
+};
+
+
+export const updateGroupChat = async (chatId, { name, avatarFile }) => {
+  const formData = new FormData();
+  if (name) formData.append("name", name);
+  if (avatarFile) formData.append("avatar", avatarFile);
+  const res = await api.patch(`/chats/${chatId}/group`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data.data;
 };

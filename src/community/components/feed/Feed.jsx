@@ -2,9 +2,17 @@ import { useState, useRef, useCallback } from "react";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import CreatePost from "./CreatePost";
 import PostCard from "../../../shared/PostCard";
+import AnnouncementCard from "../../../shared/AnnouncementCard";
 import { getFeed, toggleLike } from "../../../services/PostService";
+import { getAnnouncements } from "../../../services/AnnouncementService";
 import { getMe } from "../../../services/UserService";
 import PostCardSkeleton from "../../../shared/PostCardSkeleton";
+
+const TABS = [
+  { key: "forYou",        label: "For You" },
+  { key: "following",     label: "Following" },
+  { key: "announcements", label: "📢 Announcements" },
+];
 
 const Feed = () => {
   const queryClient = useQueryClient();
@@ -13,10 +21,10 @@ const Feed = () => {
 
   const { data: currentUser } = useQuery({ queryKey: ["me"], queryFn: getMe });
 
-  // FIX: Use infinite query for proper pagination / infinite scroll
+  // Posts feed (forYou + following)
   const {
-    data,
-    isLoading,
+    data: postsData,
+    isLoading: postsLoading,
     isFetchingNextPage,
     hasNextPage,
     fetchNextPage,
@@ -27,9 +35,31 @@ const Feed = () => {
       const { page, pages } = lastPage?.pagination || {};
       return page < pages ? page + 1 : undefined;
     },
+    enabled: feedType !== "announcements",
   });
 
-  const posts = data?.pages?.flatMap((p) => p.posts) || [];
+  // Announcements feed
+  const {
+    data: announcementsData,
+    isLoading: announcementsLoading,
+    isFetchingNextPage: isFetchingMoreAnnouncements,
+    hasNextPage: hasMoreAnnouncements,
+    fetchNextPage: fetchMoreAnnouncements,
+  } = useInfiniteQuery({
+    queryKey: ["announcements"],
+    queryFn: ({ pageParam = 1 }) => getAnnouncements(pageParam, 20),
+    getNextPageParam: (lastPage) => {
+      const { page, pages } = lastPage?.pagination || {};
+      return page < pages ? page + 1 : undefined;
+    },
+    enabled: feedType === "announcements",
+  });
+
+  const posts = postsData?.pages?.flatMap((p) => p.posts) || [];
+  const announcements = announcementsData?.pages?.flatMap((p) => p.announcements) || [];
+
+  const isLoading = feedType === "announcements" ? announcementsLoading : postsLoading;
+  const isEmpty = feedType === "announcements" ? announcements.length === 0 : posts.length === 0;
 
   // Infinite scroll sentinel
   const sentinelRef = useCallback(
@@ -37,12 +67,19 @@ const Feed = () => {
       if (!node) return;
       if (observerRef.current) observerRef.current.disconnect();
       observerRef.current = new IntersectionObserver(
-        (entries) => { if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) fetchNextPage(); },
+        (entries) => {
+          if (!entries[0].isIntersecting) return;
+          if (feedType === "announcements" && hasMoreAnnouncements && !isFetchingMoreAnnouncements) {
+            fetchMoreAnnouncements();
+          } else if (feedType !== "announcements" && hasNextPage && !isFetchingNextPage) {
+            fetchNextPage();
+          }
+        },
         { threshold: 0.1 }
       );
       observerRef.current.observe(node);
     },
-    [hasNextPage, isFetchingNextPage, fetchNextPage]
+    [feedType, hasNextPage, isFetchingNextPage, fetchNextPage, hasMoreAnnouncements, isFetchingMoreAnnouncements, fetchMoreAnnouncements]
   );
 
   const likeMutation = useMutation({
@@ -78,23 +115,29 @@ const Feed = () => {
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["feed", feedType] }),
   });
 
+  const emptyMessages = {
+    forYou: "No posts yet. Be the first to post! 🙏",
+    following: "No posts from people you follow yet. Follow someone to see their posts here! 🙏",
+    announcements: "No announcements yet. Check back soon! 📢",
+  };
+
   return (
     <main className="flex-1 space-y-4">
-      <CreatePost />
+      {feedType !== "announcements" && <CreatePost />}
 
-      {/* Feed Tabs */}
+      {/* Tabs */}
       <div className="bg-white rounded-2xl border border-gray-200 px-4 py-3 flex gap-2">
-        {["forYou", "following"].map((type) => (
+        {TABS.map((tab) => (
           <button
-            key={type}
-            onClick={() => setFeedType(type)}
+            key={tab.key}
+            onClick={() => setFeedType(tab.key)}
             className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
-              feedType === type
+              feedType === tab.key
                 ? "bg-[#401667] text-white shadow-sm"
                 : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"
             }`}
           >
-            {type === "forYou" ? "For You" : "Following"}
+            {tab.label}
           </button>
         ))}
       </div>
@@ -107,16 +150,14 @@ const Feed = () => {
       )}
 
       {/* Empty state */}
-      {!isLoading && posts.length === 0 && (
+      {!isLoading && isEmpty && (
         <div className="text-center py-10 text-gray-400 text-sm">
-          {feedType === "following"
-            ? "No posts from people you follow yet. Follow someone to see their posts here! 🙏"
-            : "No posts yet. Be the first to post! 🙏"}
+          {emptyMessages[feedType]}
         </div>
       )}
 
       {/* Posts */}
-      {posts.map((post) => (
+      {feedType !== "announcements" && posts.map((post) => (
         <PostCard
           key={post._id}
           post={post}
@@ -126,13 +167,16 @@ const Feed = () => {
         />
       ))}
 
-      {/* Infinite scroll sentinel */}
-      {hasNextPage && <div ref={sentinelRef} className="h-4" />}
+      {/* Announcements */}
+      {feedType === "announcements" && announcements.map((a) => (
+        <AnnouncementCard key={a._id} announcement={a} />
+      ))}
 
-      {isFetchingNextPage && (
-        <div className="space-y-4">
-          <PostCardSkeleton />
-        </div>
+      {/* Infinite scroll sentinel */}
+      {(hasNextPage || hasMoreAnnouncements) && <div ref={sentinelRef} className="h-4" />}
+
+      {(isFetchingNextPage || isFetchingMoreAnnouncements) && (
+        <div className="space-y-4"><PostCardSkeleton /></div>
       )}
     </main>
   );

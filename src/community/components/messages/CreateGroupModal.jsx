@@ -27,12 +27,6 @@ const CreateGroupModal = ({ isOpen, onClose, contacts, currentUser, onCreateGrou
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // 5MB limit
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image must be under 5MB");
-      return;
-    }
-
     setAvatarFile(file);
     const reader = new FileReader();
     reader.onloadend = () => {
