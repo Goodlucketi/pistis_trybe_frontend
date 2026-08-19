@@ -9,7 +9,7 @@ import { useSocket } from "../../../hooks/useSocket";
 const ChatWindow = ({
   conversation, messages = [], currentUser, onSendMessage, onReact,
   onForward, onBack, isMobile, onDelete, allConversations, setConversations,
-  contacts, onCreateGroup,
+  contacts,
 }) => {
   const [replyTo, setReplyTo] = useState(null);
   const [forwardingMessage, setForwardingMessage] = useState(null);

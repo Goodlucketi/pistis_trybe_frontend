@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { X, Camera, Users, Crown, Trash2, UserMinus, Check, Pencil } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateGroupChat } from "../../../services/ChatService";
@@ -16,9 +16,64 @@ export default function GroupInfoModal({
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [avatarFile, setAvatarFile] = useState(null);
 
-  const isAdmin = conversation?.participants?.some(
-    (p) => p?.id === currentUser?.id && p?.role === "admin"
-  );
+  // FIX 1: Deduplicate participants by id to prevent admin showing twice
+ const participants = useMemo(
+  () => conversation?.participants?? [],
+  [conversation?.participants]
+);
+
+  const uniqueParticipants = useMemo(() => {
+    if (!participants.length) return [];
+    const seen = new Set();
+    return participants.filter((p) => {
+      if (!p?.id || seen.has(p.id)) return false;
+      seen.add(p.id);
+      return true;
+    });
+  }, [participants]);
+
+  const isAdmin = useMemo(() => {
+    const adminCheck = uniqueParticipants.some(
+      (p) => p?.id === currentUser?.id && p?.role === "admin"
+    );
+    
+    // Temporary debug - remove after fixing
+    console.log('Admin check:', {
+      currentUserId: currentUser?.id,
+      currentUserIdType: typeof currentUser?.id,
+      participants: uniqueParticipants.map(p => ({
+        id: p.id,
+        idType: typeof p.id,
+        role: p.role,
+        name: p.name
+      })),
+      result: adminCheck
+    });
+    
+    return adminCheck;
+  }, [uniqueParticipants, currentUser?.id]);
+
+  // FIX 3: Cleanup object URLs to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (avatarPreview) {
+        URL.revokeObjectURL(avatarPreview);
+      }
+    };
+  }, [avatarPreview]);
+
+  // FIX 4: Reset state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setEditingName(false);
+      setAvatarFile(null);
+      if (avatarPreview) {
+        URL.revokeObjectURL(avatarPreview);
+        setAvatarPreview(null);
+      }
+      setNewName(conversation?.name || "");
+    }
+  }, [isOpen, conversation?.name]);
 
   const updateMut = useMutation({
     mutationFn: ({ name, avatarFile }) =>
@@ -30,14 +85,25 @@ export default function GroupInfoModal({
       queryClient.invalidateQueries({ queryKey: ["chats"] });
       setEditingName(false);
       setAvatarFile(null);
-      setAvatarPreview(null);
+      if (avatarPreview) {
+        URL.revokeObjectURL(avatarPreview);
+        setAvatarPreview(null);
+      }
     },
-    onError: (e) => toast.error(e?.response?.data?.message || "Failed to update group"),
+    onError: (e) => {
+      toast.error(e?.response?.data?.message || "Failed to update group");
+    },
   });
 
   const handleAvatarChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Revoke previous preview before setting new one
+    if (avatarPreview) {
+      URL.revokeObjectURL(avatarPreview);
+    }
+
     setAvatarFile(file);
     setAvatarPreview(URL.createObjectURL(file));
   };
@@ -48,25 +114,39 @@ export default function GroupInfoModal({
   };
 
   const handleSaveName = () => {
-    if (!newName.trim() || newName.trim() === conversation?.name) {
+    const trimmed = newName.trim();
+    if (!trimmed || trimmed === conversation?.name) {
       setEditingName(false);
       return;
     }
-    updateMut.mutate({ name: newName.trim() });
+    updateMut.mutate({ name: trimmed });
   };
 
-  if (!isOpen || !conversation) return null;
+  const handleCancelEditName = () => {
+    setEditingName(false);
+    setNewName(conversation?.name || "");
+  };
+
+  if (!isOpen ||!conversation) return null;
 
   const displayAvatar = avatarPreview || conversation?.avatar;
+  const isPending = updateMut.isPending;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/50"
+        onClick={!isPending? onClose : undefined}
+      />
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm max-h-[85vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-100 shrink-0">
           <h3 className="font-bold text-gray-900">Group Info</h3>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-full">
+          <button
+            onClick={onClose}
+            disabled={isPending}
+            className="p-1.5 hover:bg-gray-100 rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition"
+          >
             <X className="w-4 h-4 text-gray-500" />
           </button>
         </div>
@@ -74,11 +154,13 @@ export default function GroupInfoModal({
         <div className="flex-1 overflow-y-auto">
           {/* Avatar + Name */}
           <div className="flex flex-col items-center p-6 pb-4">
-            {/* FIX: Avatar upload */}
             <div className="relative mb-3">
-              {displayAvatar ? (
-                <img src={displayAvatar} alt={conversation.name}
-                  className="w-20 h-20 rounded-full object-cover ring-4 ring-gray-100" />
+              {displayAvatar? (
+                <img
+                  src={displayAvatar}
+                  alt={conversation.name}
+                  className="w-20 h-20 rounded-full object-cover ring-4 ring-gray-100"
+                />
               ) : (
                 <div className="w-20 h-20 rounded-full bg-[#401667] flex items-center justify-center ring-4 ring-gray-100">
                   <Users className="w-8 h-8 text-white" />
@@ -89,7 +171,8 @@ export default function GroupInfoModal({
                 <>
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="absolute bottom-0 right-0 w-7 h-7 bg-[#401667] rounded-full flex items-center justify-center border-2 border-white shadow-sm hover:bg-[#2e1048] transition"
+                    disabled={isPending}
+                    className="absolute bottom-0 right-0 w-7 h-7 bg-[#401667] rounded-full flex items-center justify-center border-2 border-white shadow-sm hover:bg-[#2e1048] transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Camera className="w-3.5 h-3.5 text-white" />
                   </button>
@@ -108,10 +191,10 @@ export default function GroupInfoModal({
             {avatarFile && (
               <button
                 onClick={handleSaveAvatar}
-                disabled={updateMut.isPending}
-                className="mb-2 px-3 py-1.5 bg-[#401667] text-white text-xs font-medium rounded-lg hover:bg-[#2e1048] transition disabled:opacity-50 flex items-center gap-1"
+                disabled={isPending}
+                className="mb-2 px-3 py-1.5 bg-[#401667] text-white text-xs font-medium rounded-lg hover:bg-[#2e1048] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
               >
-                {updateMut.isPending ? (
+                {isPending? (
                   <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
                   <Check className="w-3 h-3" />
@@ -121,21 +204,32 @@ export default function GroupInfoModal({
             )}
 
             {/* Group name */}
-            {editingName ? (
+            {editingName? (
               <div className="flex items-center gap-2 w-full max-w-xs">
                 <input
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); if (e.key === "Escape") setEditingName(false); }}
-                  className="flex-1 text-center font-bold text-gray-900 px-3 py-1.5 border border-purple-400 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSaveName();
+                    if (e.key === "Escape") handleCancelEditName();
+                  }}
+                  disabled={isPending}
+                  className="flex-1 text-center font-bold text-gray-900 px-3 py-1.5 border border-purple-400 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
                   autoFocus
+                  maxLength={50}
                 />
-                <button onClick={handleSaveName} disabled={updateMut.isPending}
-                  className="p-1.5 bg-green-50 hover:bg-green-100 text-green-600 rounded-lg transition">
+                <button
+                  onClick={handleSaveName}
+                  disabled={isPending ||!newName.trim()}
+                  className="p-1.5 bg-green-50 hover:bg-green-100 text-green-600 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   <Check className="w-4 h-4" />
                 </button>
-                <button onClick={() => setEditingName(false)}
-                  className="p-1.5 hover:bg-gray-100 text-gray-500 rounded-lg transition">
+                <button
+                  onClick={handleCancelEditName}
+                  disabled={isPending}
+                  className="p-1.5 hover:bg-gray-100 text-gray-500 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -143,8 +237,14 @@ export default function GroupInfoModal({
               <div className="flex items-center gap-2">
                 <h4 className="font-bold text-gray-900 text-lg">{conversation.name}</h4>
                 {isAdmin && (
-                  <button onClick={() => { setNewName(conversation.name); setEditingName(true); }}
-                    className="p-1 hover:bg-gray-100 rounded-full transition">
+                  <button
+                    onClick={() => {
+                      setNewName(conversation.name);
+                      setEditingName(true);
+                    }}
+                    disabled={isPending}
+                    className="p-1 hover:bg-gray-100 rounded-full transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     <Pencil className="w-3.5 h-3.5 text-gray-400" />
                   </button>
                 )}
@@ -152,25 +252,25 @@ export default function GroupInfoModal({
             )}
 
             <p className="text-sm text-gray-400 mt-0.5">
-              {conversation.participants?.length || 0} members
+              {uniqueParticipants.length} member{uniqueParticipants.length!== 1? 's' : ''}
             </p>
           </div>
 
-          {/* Members list */}
+          {/* Members list - now uses uniqueParticipants */}
           <div className="px-4 pb-2">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Members</p>
             <div className="space-y-1">
-              {(conversation.participants || []).map((p) => {
+              {uniqueParticipants.map((p) => {
                 if (!p?.id) return null;
                 const isCurrentUser = p.id === currentUser?.id;
                 const isMemberAdmin = p.role === "admin";
                 return (
                   <div key={p.id} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 group">
-                    {p.avatar ? (
+                    {p.avatar? (
                       <img src={p.avatar} className="w-9 h-9 rounded-full object-cover shrink-0" alt="" />
                     ) : (
                       <div className="w-9 h-9 rounded-full bg-[#401667] flex items-center justify-center shrink-0">
-                        <span className="text-white text-xs font-bold">{p.name?.charAt(0) || "?"}</span>
+                        <span className="text-white text-xs font-bold">{p.name?.charAt(0)?.toUpperCase() || "?"}</span>
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
@@ -183,16 +283,24 @@ export default function GroupInfoModal({
                         </p>
                       )}
                     </div>
-                    {isAdmin && !isCurrentUser && (
+                    {isAdmin &&!isCurrentUser && (
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {!isMemberAdmin && (
-                          <button onClick={() => onPromoteAdmin?.(p.id)}
-                            className="p-1.5 hover:bg-purple-50 text-gray-400 hover:text-purple-600 rounded-lg transition" title="Make Admin">
+                          <button
+                            onClick={() => onPromoteAdmin?.(p.id)}
+                            disabled={isPending}
+                            className="p-1.5 hover:bg-purple-50 text-gray-400 hover:text-purple-600 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Make Admin"
+                          >
                             <Crown className="w-3.5 h-3.5" />
                           </button>
                         )}
-                        <button onClick={() => onRemoveMember?.(p.id)}
-                          className="p-1.5 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition" title="Remove">
+                        <button
+                          onClick={() => onRemoveMember?.(p.id)}
+                          disabled={isPending}
+                          className="p-1.5 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Remove"
+                        >
                           <UserMinus className="w-3.5 h-3.5" />
                         </button>
                       </div>
@@ -207,14 +315,16 @@ export default function GroupInfoModal({
           <div className="p-4 space-y-2 border-t border-gray-100 mt-2">
             <button
               onClick={() => { onLeaveGroup?.(); onClose(); }}
-              className="w-full px-4 py-2.5 rounded-xl border border-red-200 text-red-600 text-sm font-medium hover:bg-red-50 transition"
+              disabled={isPending}
+              className="w-full px-4 py-2.5 rounded-xl border border-red-200 text-red-600 text-sm font-medium hover:bg-red-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Leave Group
             </button>
             {isAdmin && (
               <button
                 onClick={() => { onDeleteGroup?.(); onClose(); }}
-                className="w-full px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition flex items-center justify-center gap-2"
+                disabled={isPending}
+                className="w-full px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Trash2 className="w-4 h-4" /> Delete Group
               </button>

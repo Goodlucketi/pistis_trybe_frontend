@@ -273,7 +273,7 @@ const MessagesPage = () => {
     activeId: conversationId,
     onSelectConversation: (conv) => navigate(`/dashboard/messages/${conv.id}`),
     contacts,
-    onCreateGroup: ({ name, participantIds }) => createGroupMutation.mutate({ name, participantIds }),
+    onCreateGroup: ({ name, participantIds, avatarFile }) => createGroupMutation.mutate({ name, participantIds, avatarFile}), // <-- pass avatarFile as null for now
     onStartDirectChat: handleStartDirectChat,
     isLoading: chatsLoading,
     onlineUserIds,
@@ -292,7 +292,7 @@ const MessagesPage = () => {
     allConversations: normalizedConversations,
     setConversations: () => {},
     contacts,
-    onCreateGroup: ({ name, participantIds }) => createGroupMutation.mutate({ name, participantIds }),
+    onCreateGroup: ({ name, participantIds, avatarFile }) => createGroupMutation.mutate({ name, participantIds, avatarFile}), // <-- pass avatarFile as null for now
   } : null;
 
   if (isMobile) {
