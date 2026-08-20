@@ -62,18 +62,16 @@ export default function BibleReader() {
   }, [tab, setSearchParams]);
 
   // Listen for URL changes from outside
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- must react to URL, not to `tab` itself
   useEffect(() => {
     const urlTab = searchParams.get("tab");
     if (urlTab && urlTab !== tab) setTab(urlTab);
-  }, [searchParams]);
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps -- must react to URL, not to `tab` itself
 
   // reset when book/chapter changes
   useEffect(() => {
     setSelectedVerse(null);
   }, [selectedBook, selectedChapter]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- intended to seed state once on mount
   useEffect(() => {
     const urlBook = searchParams.get("book");
     const urlChapter = searchParams.get("chapter");
@@ -87,7 +85,7 @@ export default function BibleReader() {
         document.getElementById(`verse-${urlVerse}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
       }, 500);
     }
-  }, []); // run once on mount
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- intend to seed state once on mount
 
   // Parse URL params on mount and when they change
   useEffect(() => {

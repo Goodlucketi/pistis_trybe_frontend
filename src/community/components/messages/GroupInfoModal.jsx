@@ -48,7 +48,6 @@ export default function GroupInfoModal({
   }, [avatarPreview]);
 
   // FIX 4: Reset state when modal closes
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- adding avatarPreview would wipe an in-progress avatar edit
   useEffect(() => {
     if (!isOpen) {
       setEditingName(false);
@@ -59,7 +58,7 @@ export default function GroupInfoModal({
       }
       setNewName(conversation?.name || "");
     }
-  }, [isOpen, conversation?.name]);
+  }, [isOpen, conversation?.name]); // eslint-disable-line react-hooks/exhaustive-deps -- adding avatarPreview would wipe an in-progress avatar edit
 
   const updateMut = useMutation({
     mutationFn: ({ name, avatarFile }) =>
