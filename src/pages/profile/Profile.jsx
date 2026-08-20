@@ -1,5 +1,4 @@
 import { useState } from 'react';
-// import { useQuery } from '@tanstack/react-query';
 import ProfileTopBlock from "../../community/components/profile/ProfileTopBlock";
 import ActivityTabs from "../../community/components/profile/Activitytabs";
 import ActivityContent from "../../community/components/profile/ActivityContent";
@@ -8,9 +7,12 @@ import { getFollowers, getFollowing } from '../../services/UserService';
 import { getUserPosts } from '../../services/UserService';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
+import { likeGroupPost, deletePost } from '../../services/GroupService';
+import getErrorMessage from '../../hooks/useErrorToast';
 
 export default function Profile() {
   const [activeTab, setActiveTab] = useState("feed");
+  const queryClient = useQueryClient();
 
   const { data: currentUser, isLoading: userLoading } = useQuery({
     queryKey: ['me'],
@@ -44,7 +46,7 @@ export default function Profile() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (postId) => deleteGroupPost({ postId }), // groupId not needed, backend checks author
+    mutationFn: (postId) => deletePost({ postId }), // groupId not needed, backend checks author
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-posts", currentUser._id] });
     },

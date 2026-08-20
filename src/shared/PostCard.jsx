@@ -9,6 +9,7 @@ import { getComments, createComment, deleteComment } from "../services/CommentSe
 import { getCurrentUser } from "../services/AuthService";
 import { toast } from "react-toastify";
 import ImageViewer from "./ImageViewer";
+import { isVideoUrl } from "../utils/media";
 
 const PostCard = ({ post, variant = "default", isOwnPost = false, onLike, onDelete }) => {
   const queryClient = useQueryClient();
@@ -243,18 +244,32 @@ const PostCard = ({ post, variant = "default", isOwnPost = false, onLike, onDele
           <div className={`mb-4 sm:mb-6 ${imgs.length === 1 ? "" : "grid grid-cols-2 gap-1"} rounded-xl overflow-hidden`}>
             {imgs.slice(0, 4).map((url, i) => {
               const isOverlay = imgs.length > 4 && i === 3;
+              const isVideo = isVideoUrl(url);
+              const imgClass = `w-full object-cover ${imgs.length === 1 ? "max-h-80 rounded-xl" : "h-40 sm:h-48"}`;
               return (
                 <div key={i} className={imgs.length === 3 && i === 0 ? "row-span-2" : ""}>
                   {isOverlay ? (
-                    <div className="relative">
-                      <img src={url} alt="" className="w-full h-40 sm:h-48 object-cover" />
-                      <div onClick={() => openViewer(3)} className="absolute inset-0 bg-black/60 flex items-center justify-center cursor-pointer">
+                    <div className="relative cursor-pointer" onClick={() => openViewer(3)}>
+                      {isVideo ? (
+                        <video src={url} preload="metadata" className="w-full h-40 sm:h-48 object-cover bg-black" />
+                      ) : (
+                        <img src={url} alt="" className="w-full h-40 sm:h-48 object-cover" />
+                      )}
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                         <span className="text-white text-xl font-bold">+{imgs.length - 4}</span>
                       </div>
                     </div>
+                  ) : isVideo ? (
+                    <video
+                      src={url}
+                      controls
+                      preload="metadata"
+                      onClick={(e) => e.stopPropagation()}
+                      className={`w-full object-cover bg-black cursor-pointer ${imgs.length === 1 ? "max-h-80 rounded-xl" : "h-40 sm:h-48"}`}
+                    />
                   ) : (
                     <img src={url} alt={`attachment ${i + 1}`} onClick={() => openViewer(i)}
-                      className={`w-full object-cover cursor-pointer hover:opacity-95 transition ${imgs.length === 1 ? "max-h-80 rounded-xl" : "h-40 sm:h-48"}`} />
+                      className={`w-full object-cover cursor-pointer hover:opacity-95 transition ${imgClass}`} />
                   )}
                 </div>
               );

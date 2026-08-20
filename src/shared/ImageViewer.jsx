@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
+import { isVideoUrl } from "../utils/media";
 
 export default function ImageViewer({ images = [], startIndex = 0, isOpen, onClose }) {
   const [current, setCurrent] = useState(startIndex);
@@ -16,6 +17,8 @@ export default function ImageViewer({ images = [], startIndex = 0, isOpen, onClo
   }, [isOpen, images.length, onClose]);
 
   if (!isOpen || !images.length) return null;
+
+  const currentIsVideo = isVideoUrl(images[current]);
 
   return (
     <div className="fixed inset-0 z-[999] bg-black/90 flex items-center justify-center" onClick={onClose}>
@@ -36,12 +39,24 @@ export default function ImageViewer({ images = [], startIndex = 0, isOpen, onClo
         </>
       )}
 
-      <img
-        src={images[current]}
-        alt={`Image ${current + 1}`}
-        className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg"
-        onClick={(e) => e.stopPropagation()}
-      />
+      {currentIsVideo ? (
+        <video
+          key={current}
+          src={images[current]}
+          controls
+          autoPlay
+          preload="metadata"
+          className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg"
+          onClick={(e) => e.stopPropagation()}
+        />
+      ) : (
+        <img
+          src={images[current]}
+          alt={`Image ${current + 1}`}
+          className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg"
+          onClick={(e) => e.stopPropagation()}
+        />
+      )}
 
       {images.length > 1 && (
         <div className="absolute bottom-4 flex gap-2">

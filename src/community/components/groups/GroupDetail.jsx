@@ -2,7 +2,17 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { ArrowLeft, Users, Settings, ImageIcon, Video, Paperclip, X } from "lucide-react";
-import { getGroupById, joinLeaveGroup, getGroupPosts, createPost } from "../../../services/GroupService";
+import {
+  getGroupById,
+  joinLeaveGroup,
+  getGroupPosts,
+  createPost,
+  likeGroupPost,
+  deletePost,
+  getGroupMembers,
+  kickMember,
+  promoteMember,
+} from "../../../services/GroupService";
 import { getMe } from "../../../services/UserService";
 import getErrorMessage from "../../../hooks/useErrorToast";
 import PostCard from "../../../shared/PostCard";
@@ -70,7 +80,7 @@ const GroupDetail = () => {
   });
 
   const deletePostMutation = useMutation({
-    mutationFn: (postId) => deleteGroupPost({ groupId: id, postId }),
+    mutationFn: (postId) => deletePost({ groupId: id, postId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["group-posts", id] });
     },

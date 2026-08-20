@@ -2,7 +2,7 @@ import { MoreVertical, Settings, Users, LogOut } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
-const CommunityCard = ({ community, userRole, onJoin, isLoading, currentUserId }) => {
+const CommunityCard = ({ community, userRole, onJoin, isLoading }) => {
   const [showMenu, setShowMenu] = useState(false);
   const { _id, name, coverUrl, membersCount, description } = community;
 

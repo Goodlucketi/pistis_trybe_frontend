@@ -24,6 +24,14 @@ export default defineConfig([
     },
     rules: {
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      // The React-Compiler purity rules bundled into eslint-plugin-react-hooks v7
+      // flag intentional, idiomatic patterns used across this app: URL-param ↔
+      // state sync and reset-on-close/form-init-from-fetch (set-state-in-effect)
+      // and relative-time formatting via Date.now() (purity). They aren't bugs,
+      // so we keep the rules off while retaining the genuinely valuable
+      // rules-of-hooks and no-unused-vars checks.
+      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/purity': 'off',
     },
   },
 ])

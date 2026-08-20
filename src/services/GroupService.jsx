@@ -61,7 +61,7 @@ export const createPost = async ({ groupId, formData }) => {
 };
 
 // CHANGED: Use deletePost, only needs postId now
-export const deletePost = async ({ groupId, postId }) => {
+export const deletePost = async ({ postId }) => {
   const response = await api.delete(`/posts/${postId}`); // <-- unified endpoint
   return response.data.data;
 };

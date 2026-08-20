@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { X, Search, MessageCircle, AlertCircle } from "lucide-react";
 import { searchUsers } from "../../../services/UserService";
 
-const NewChatModal = ({ isOpen, onClose, onStartChat, currentUserId }) => {
+const NewChatModal = ({ isOpen, onClose, onStartChat }) => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);

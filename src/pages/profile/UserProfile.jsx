@@ -13,7 +13,7 @@ export default function UserProfile() {
   const { userId } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("feed");
+  const [activeTab] = useState("feed");
   const [viewerOpen, setViewerOpen] = useState(false);
 
   const { data: currentUser } = useQuery({ queryKey: ['me'], queryFn: getMe });

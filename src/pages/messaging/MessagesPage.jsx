@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import ConversationList from "../../community/components/messages/ConversationList";
 import ChatWindow from "../../community/components/messages/ChatWindow";
@@ -8,6 +8,7 @@ import { getChats, getMessages, sendMessage, deleteMessage, reactToMessage, crea
 import { getMe } from "../../services/UserService";
 import { useSocket } from "../../hooks/useSocket";
 import { toast } from "react-toastify"
+import { isVideoUrl } from "../../utils/media";
 
 const MessagesPage = () => {
   const { conversationId } = useParams();
@@ -41,7 +42,7 @@ const MessagesPage = () => {
       senderName: msg.senderId?.fullName || "",
       senderAvatar: msg.senderId?.avatarUrl || null,
       text: msg.body || "",
-      attachments: msg.mediaUrl ? [{ id: msg._id, url: msg.mediaUrl, type: "image/jpeg", name: "attachment" }] : [],
+      attachments: msg.mediaUrl ? [{ id: msg._id, url: msg.mediaUrl, type: isVideoUrl(msg.mediaUrl) ? "video/mp4" : "image/jpeg", name: "attachment" }] : [],
       timestamp: msg.createdAt || msg.timestamp || new Date().toISOString(),
       status: msg.isRead ? "read" : "sent",
       reactions: msg.reactions || {},
@@ -228,12 +229,6 @@ const MessagesPage = () => {
     onError: () => toast.error("Failed to react"),
   });
 
-  // const createGroupMutation = useMutation({
-  //   mutationFn: ({ name, participantIds }) => createGroupChat({ name, participantIds }),
-  //   onSuccess: (newChat) => { queryClient.invalidateQueries({ queryKey: ["chats"] }); navigate(`/dashboard/messages/${newChat._id}`); },
-  //   onError: () => toast.error("Failed to create group chat"),
-  // });
-
   const createGroupMutation = useMutation({
     mutationFn: (payload) => createGroupChat(payload), // <-- pass entire payload
     onSuccess: (newChat) => {
@@ -285,7 +280,7 @@ const MessagesPage = () => {
     currentUser: normalizedCurrentUser,
     onSendMessage: handleSendMessage,
     onReact: (messageId, emoji) => reactMutation.mutate({ messageId, emoji }),
-    onForward: (message, targetId) => handleSendMessage({ text: message?.text || "", replyTo: null }),
+    onForward: (message) => handleSendMessage({ text: message?.text || "", replyTo: null }),
     onBack: () => navigate("/dashboard/messages"),
     isMobile,
     onDelete: (messageId) => deleteMutation.mutate(messageId),

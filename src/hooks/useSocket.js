@@ -27,20 +27,12 @@ const getSocket = () => {
     timeout: 20000,
   });
 
-  socketInstance.on("connect", () => {
-    console.log("✅ Socket connected:", socketInstance.id);
-  });
-
   socketInstance.on("connect_error", (err) => {
     console.error("Socket error:", err.message);
     // if token expired, disconnect
     if (err.message.includes("Authentication")) {
       disconnectSocket();
     }
-  });
-
-  socketInstance.on("disconnect", (reason) => {
-    console.log("Socket disconnected:", reason);
   });
 
   return socketInstance;

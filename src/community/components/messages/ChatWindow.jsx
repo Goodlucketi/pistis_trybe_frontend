@@ -22,8 +22,6 @@ const ChatWindow = ({
   const messagesEndRef = useRef(null);
   const { on } = useSocket();
 
-  if (!currentUser) return null;
-
   // Keyboard height on mobile
   useEffect(() => {
     if (!isMobile || !window.visualViewport) return;
@@ -66,6 +64,8 @@ const ChatWindow = ({
     });
     return () => { offOnline(); offOffline(); };
   }, [on]);
+
+  if (!currentUser) return null;
 
   const handleSend = ({ text, attachments, replyTo: replyId }) => {
     onSendMessage({ text, attachments, replyTo: replyId });

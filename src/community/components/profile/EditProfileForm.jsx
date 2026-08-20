@@ -35,7 +35,7 @@ export default function EditProfileForm() {
 
   const updateMutation = useMutation({
     mutationFn: (data) => updateMe(data),
-    onSuccess: (updatedUser) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['me'] });
       navigate('/dashboard/profile');
     },

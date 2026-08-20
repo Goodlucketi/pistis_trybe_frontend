@@ -8,7 +8,6 @@ import { useState, useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 
 const AppLayout = () => {
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const location = useLocation();
 
@@ -28,7 +27,7 @@ const AppLayout = () => {
 
   return (
     <div className="min-h-screen bg-[#F5F6FA]">
-      <MobileTopBar onMenuClick={() => setIsMobileSidebarOpen(true)} />
+      <MobileTopBar onMenuClick={() => {}} />
 
       <div className="flex w-full mx-auto gap-6 px-4 md:px-10 pt-4 lg:pt-6">
         {/* Desktop Sidebar */}
@@ -37,9 +36,6 @@ const AppLayout = () => {
             <Sidebar isMobile={false} />
           </ErrorBoundary>
         </div>
-
-        {/* Mobile Sidebar Overlay */}
-        {/* <Sidebar isMobile isOpen={isMobileSidebarOpen} onClose={() => setIsMobileSidebarOpen(false)} /> */}
 
         {/* Main Content */}
         <main className={`flex-1 ${hideRightPanel ? "max-w-full" : "max-w-[1280px]"} mx-auto min-h-[calc(100vh-2rem)] pb-20 lg:pb-0`}>

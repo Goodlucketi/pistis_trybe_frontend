@@ -6,7 +6,7 @@ import { toast } from "react-toastify";
 
 export default function GroupInfoModal({
   isOpen, onClose, conversation, currentUser,
-  contacts, onAddMembers, onRemoveMember, onPromoteAdmin,
+  onRemoveMember, onPromoteAdmin,
   onLeaveGroup, onDeleteGroup, onUpdateGroupName, onUpdateGroupAvatar,
 }) {
   const queryClient = useQueryClient();
@@ -33,24 +33,9 @@ export default function GroupInfoModal({
   }, [participants]);
 
   const isAdmin = useMemo(() => {
-    const adminCheck = uniqueParticipants.some(
+    return uniqueParticipants.some(
       (p) => p?.id === currentUser?.id && p?.role === "admin"
     );
-    
-    // Temporary debug - remove after fixing
-    console.log('Admin check:', {
-      currentUserId: currentUser?.id,
-      currentUserIdType: typeof currentUser?.id,
-      participants: uniqueParticipants.map(p => ({
-        id: p.id,
-        idType: typeof p.id,
-        role: p.role,
-        name: p.name
-      })),
-      result: adminCheck
-    });
-    
-    return adminCheck;
   }, [uniqueParticipants, currentUser?.id]);
 
   // FIX 3: Cleanup object URLs to prevent memory leaks
@@ -63,6 +48,7 @@ export default function GroupInfoModal({
   }, [avatarPreview]);
 
   // FIX 4: Reset state when modal closes
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- adding avatarPreview would wipe an in-progress avatar edit
   useEffect(() => {
     if (!isOpen) {
       setEditingName(false);

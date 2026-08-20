@@ -27,6 +27,19 @@ const MessageBubble = ({
     { emoji: "🤗", label: "Care" },
   ];
 
+  // Click-outside handler for the context menu / reaction picker.
+  // Keep this hook before the conditional early return below (hooks rules).
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current &&!menuRef.current.contains(e.target)) {
+        setShowMenu(false);
+        setShowReactPicker(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   // ← GUARDS: return null if critical data missing
   if (!message ||!currentUser) return null;
 
@@ -43,17 +56,6 @@ const MessageBubble = ({
      ? "You"
       : otherUserName
     : null;
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (menuRef.current &&!menuRef.current.contains(e.target)) {
-        setShowMenu(false);
-        setShowReactPicker(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   const handleTouchStart = (e) => {
     if (!isMobile) return;
@@ -73,13 +75,6 @@ const MessageBubble = ({
       onReply(message);
       if (navigator.vibrate) navigator.vibrate(50);
     }
-  };
-
-  const ReadStatus = () => {
-    if (!isSent) return null;
-    if (message.status === "read") return <CheckCheck className="w-4 h-4 text-purple-400" />;
-    if (message.status === "delivered") return <CheckCheck className="w-4 h-4 text-gray-400" />;
-    return <Check className="w-4 h-4 text-gray-400" />;
   };
 
   const isImage = (type) => type?.startsWith("image/");
@@ -220,7 +215,13 @@ const MessageBubble = ({
 
             <div className="flex items-center gap-1">
               <span className="text-xs text-gray-500">{timestamp}</span>
-              <ReadStatus />
+              {isSent && (message.status === "read" ? (
+                <CheckCheck className="w-4 h-4 text-purple-400" />
+              ) : message.status === "delivered" ? (
+                <CheckCheck className="w-4 h-4 text-gray-400" />
+              ) : (
+                <Check className="w-4 h-4 text-gray-400" />
+              ))}
               <button
                 onClick={(e) => {
                   e.stopPropagation();

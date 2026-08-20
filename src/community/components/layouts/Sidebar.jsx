@@ -1,22 +1,19 @@
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { X, LogOut, Bell } from "lucide-react";
+import { X, LogOut } from "lucide-react";
 import clsx from "clsx";
 import { FiHome, FiUsers, FiBookOpen, FiMessageCircle, FiEdit2, FiChevronLeft } from "react-icons/fi";
 import logo from "../../../assets/logos/sidebar_logo.png";
 import { logoutUser } from "../../../services/AuthService";
-import { getNotifications, markNotificationsRead } from "../../../services/NotificationService";
 import CreatePostModal from "../groups/CreatePostModal";
 import CreateGroupModal from "../groups/CreateGroupModal";
 import { getMe } from "../../../services/UserService";
-import NotificationsPanel from "./NotificationsPanel";
 
 export default function Sidebar({ isOpen, onClose, isMobile = false }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [desktopCollapsed, setDesktopCollapsed] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
 
@@ -24,13 +21,6 @@ export default function Sidebar({ isOpen, onClose, isMobile = false }) {
   const isMessagesPage = location.pathname.startsWith("/dashboard/messages");
 
   const { data: user } = useQuery({ queryKey: ["me"], queryFn: getMe });
-
-  const { data: notifData } = useQuery({
-    queryKey: ["notifications"],
-    queryFn: () => getNotifications(1, 10),
-    refetchInterval: 60_000,
-  });
-  const unreadCount = notifData?.unreadCount || 0;
 
   const handleLogout = () => { logoutUser(); navigate("/login"); };
 

@@ -30,6 +30,7 @@ export default function NotificationsPanel({ notifications = [], onClose }) {
   });
 
   // Mark all as read when panel opens
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on open, not on every notification change
   useEffect(() => {
     const unread = notifications.filter((n) => !n.isRead);
     if (unread.length > 0) markReadMutation.mutate();

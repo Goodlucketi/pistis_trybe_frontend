@@ -24,3 +24,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Editor temp artifact (git diff output) accidentally committed once
+\#Uf01b

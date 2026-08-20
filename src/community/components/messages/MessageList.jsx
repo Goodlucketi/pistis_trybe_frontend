@@ -1,4 +1,3 @@
-import { useEffect, useRef } from "react";
 import MessageBubble from "./MessageBubble";
 import { format, isToday, isYesterday, isSameDay } from "date-fns";
 

@@ -55,8 +55,7 @@ const Login = () => {
       setLoading(true);
       setServerError("");
       const { user } = await loginUser(values); // destructure user from return
-      console.log("LOGIN USER OBJECT:", user); // you already log this in service
-      
+
       if (user?.role === "admin" || user?.role === "super_admin") {
         navigate("/admin");
       } else {

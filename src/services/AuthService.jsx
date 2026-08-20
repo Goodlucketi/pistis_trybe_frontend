@@ -1,31 +1,29 @@
 import api from "../api/api";
 import { disconnectSocket } from "../hooks/useSocket";
 
+// Persist auth tokens + user payload from a backend login/register response.
+// Callers pass the raw `response.data.data` object.
+const storeAuth = ({ accessToken, refreshToken, user }) => {
+  if (accessToken) localStorage.setItem("accessToken", accessToken);
+  if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
+  if (user) localStorage.setItem("user", JSON.stringify(user));
+};
+
 export const loginUser = async ({ email, password }) => {
   const response = await api.post("/auth/login", { email, password });
-  const { accessToken, refreshToken, user } = response.data.data;
-  console.log("LOGIN USER OBJECT:", user);
-  if(accessToken) localStorage.setItem("accessToken", accessToken);
-  if(refreshToken) localStorage.setItem("refreshToken", refreshToken);
-  if(user) localStorage.setItem("user", JSON.stringify(user));
+  storeAuth(response.data.data);
   return response.data.data;
 };
 
 export const registerUser = async ({ fullName, email, password }) => {
   const response = await api.post("/auth/register", { fullName, email, password });
-  const { accessToken, refreshToken, user } = response.data.data;
-  if(accessToken) localStorage.setItem("accessToken", accessToken);
-  if(refreshToken) localStorage.setItem("refreshToken", refreshToken);
-  if(user) localStorage.setItem("user", JSON.stringify(user));
+  storeAuth(response.data.data);
   return response.data.data;
 };
 
 export const googleLogin = async (credential) => {
   const response = await api.post("/auth/google", { credential });
-  const { accessToken, refreshToken, user } = response.data.data;
-  if(accessToken) localStorage.setItem("accessToken", accessToken);
-  if(refreshToken) localStorage.setItem("refreshToken", refreshToken);
-  if(user) localStorage.setItem("user", JSON.stringify(user));
+  storeAuth(response.data.data);
   return response.data.data;
 };
 
@@ -67,7 +65,6 @@ export const getCurrentUser = () => {
 };
 
 export const isAuthenticated = () => !!localStorage.getItem("accessToken");
-// export const isAuthenticated = () => !!localStorage.getItem("accessToken");
 
 export const changePassword = async (data) => {
   const response = await api.post("/auth/change-password", data);
