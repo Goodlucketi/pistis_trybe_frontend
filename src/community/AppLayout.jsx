@@ -26,10 +26,10 @@ const AppLayout = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA]">
+    <div className="min-h-screen bg-[#F5F6FA] dark:bg-[#020817]">
       <MobileTopBar onMenuClick={() => {}} />
 
-      <div className="flex w-full mx-auto gap-6 px-4 md:px-10 pt-4 lg:pt-6">
+      <div className="flex w-full mx-auto gap-6 px-4 md:px-10 pt-4 lg:pt-6 dark:bg-[#020817]">
         {/* Desktop Sidebar */}
         <div className="hidden lg:block shrink-0">
           <ErrorBoundary message="Sidebar failed to load.">

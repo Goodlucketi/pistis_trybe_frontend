@@ -128,13 +128,13 @@ const MessageBubble = ({
             className={`mb-1 px-3 py-2 rounded-lg cursor-pointer ${
               isSent
               ? "bg-purple-700/60 border-l-2 border-purple-300"
-                : "bg-[#F9F3FF]/80 border-l-2 border-purple-300"
+                : "bg-slate-800/80 border-l-2 border-purple-300"
             }`}
           >
-            <p className={`text-xs font-semibold mb-0.5 ${isSent? "text-purple-200" : "text-purple-700"}`}>
+            <p className={`text-xs font-semibold mb-0.5 ${isSent? "text-purple-200" : "text-purple-200"}`}>
               {repliedSender}
             </p>
-            <p className={`text-xs line-clamp-2 ${isSent? "text-purple-100/90" : "text-gray-700/80"}`}>
+            <p className={`text-xs line-clamp-2 ${isSent? "text-purple-100/90" : "text-slate-200"}`}>
               {repliedMessage.text || "Message"}
             </p>
           </div>
@@ -146,7 +146,7 @@ const MessageBubble = ({
           className={`rounded-2xl overflow-hidden relative ${
             isSent
             ? "bg-white text-gray-900 rounded-br-md border border-gray-200"
-              : "bg-[#F9F3FF] text-gray-900 rounded-bl-md border border-purple-100"
+              : "bg-slate-900 text-slate-100 rounded-bl-md border border-slate-700"
           }`}
         >
           {/* Attachments */}
@@ -168,16 +168,24 @@ const MessageBubble = ({
                       <a
                         href={file?.url}
                         download={file?.name}
-                        className="flex items-center gap-3 p-3 rounded-lg bg-white hover:bg-gray-50 transition-colors border border-purple-100"
+                        className={`flex items-center gap-3 p-3 rounded-lg transition-colors border ${
+                          isSent
+                            ? "bg-white hover:bg-gray-50 border-purple-100"
+                            : "bg-slate-800 hover:bg-slate-700 border-slate-600"
+                        }`}
                       >
-                        <div className="p-2 rounded-lg bg-purple-50">
-                          <File className="w-5 h-5 text-purple-600" />
+                        <div className={`p-2 rounded-lg ${isSent ? "bg-purple-50" : "bg-slate-700"}`}>
+                          <File className={`w-5 h-5 ${isSent ? "text-purple-600" : "text-purple-300"}`} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate text-gray-900">{file?.name || "file"}</p>
-                          <p className="text-xs text-gray-500">{formatFileSize(file?.size)}</p>
+                          <p className={`text-sm font-medium truncate ${isSent ? "text-gray-900" : "text-slate-100"}`}>
+                            {file?.name || "file"}
+                          </p>
+                          <p className={`text-xs ${isSent ? "text-gray-500" : "text-slate-400"}`}>
+                            {formatFileSize(file?.size)}
+                          </p>
                         </div>
-                        <Download className="w-4 h-4 flex-shrink-0 text-gray-500" />
+                        <Download className={`w-4 h-4 flex-shrink-0 ${isSent ? "text-gray-500" : "text-slate-400"}`} />
                       </a>
                     </div>
                   )}
@@ -208,13 +216,15 @@ const MessageBubble = ({
                       </span>
                     </div>
                   )}
-                  <span className="text-xs text-gray-600 font-medium">{senderInGroup.name}</span>
+                  <span className={`text-xs font-medium ${isSent ? "text-gray-600" : "text-slate-300"}`}>
+                    {senderInGroup.name}
+                  </span>
                 </>
               )}
             </div>
 
             <div className="flex items-center gap-1">
-              <span className="text-xs text-gray-500">{timestamp}</span>
+              <span className={`text-xs ${isSent ? "text-gray-500" : "text-slate-400"}`}>{timestamp}</span>
               {isSent && (message.status === "read" ? (
                 <CheckCheck className="w-4 h-4 text-purple-400" />
               ) : message.status === "delivered" ? (
@@ -227,9 +237,9 @@ const MessageBubble = ({
                   e.stopPropagation();
                   setShowMenu(!showMenu);
                 }}
-                className="ml-1 p-0.5 rounded-full hover:bg-black/10 transition-colors"
+                className={`ml-1 p-0.5 rounded-full transition-colors ${isSent ? "hover:bg-black/10" : "hover:bg-white/10"}`}
               >
-                <MoreHorizontal className="w-4 h-4 text-gray-500" />
+                <MoreHorizontal className={`w-4 h-4 ${isSent ? "text-gray-500" : "text-slate-300"}`} />
               </button>
             </div>
           </div>
@@ -245,8 +255,10 @@ const MessageBubble = ({
                 <button
                   key={emoji}
                   onClick={() => onReact(message.id, emoji)}
-                  className={`bg-white border rounded-full px-2 py-0.5 text-sm hover:bg-gray-50 shadow-sm ${
-                    iReacted? "border-purple-400 bg-purple-50" : "border-gray-200"
+                  className={`border rounded-full px-2 py-0.5 text-sm shadow-sm ${
+                    isSent
+                      ? `bg-white hover:bg-gray-50 ${iReacted ? "border-purple-400 bg-purple-50" : "border-gray-200"}`
+                      : `bg-slate-800 hover:bg-slate-700 text-slate-100 ${iReacted ? "border-purple-400" : "border-slate-600"}`
                   }`}
                 >
                   {emoji} {usersArray.length > 1 && <span className="text-xs">{usersArray.length}</span>}
@@ -260,23 +272,31 @@ const MessageBubble = ({
         {showMenu && (
           <div
             ref={menuRef}
-            className={`absolute ${isSent? "right-0" : "left-0"} bottom-8 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-20 w-40`}
+            className={`absolute ${isSent? "right-0" : "left-0"} bottom-8 rounded-lg shadow-xl border py-1 z-20 w-40 ${
+              isSent ? "bg-white border-gray-200" : "bg-slate-900 border-slate-700"
+            }`}
           >
             <button
               onClick={() => { setShowMenu(false); setShowReactPicker(true); }}
-              className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 flex items-center gap-3 text-gray-900"
+              className={`w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 ${
+                isSent ? "hover:bg-gray-50 text-gray-900" : "hover:bg-slate-800 text-slate-100"
+              }`}
             >
               <Smile className="w-4 h-4" /> React
             </button>
             <button
               onClick={() => { onReply(message); setShowMenu(false); }}
-              className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 flex items-center gap-3 text-gray-900"
+              className={`w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 ${
+                isSent ? "hover:bg-gray-50 text-gray-900" : "hover:bg-slate-800 text-slate-100"
+              }`}
             >
               <Reply className="w-4 h-4" /> Reply
             </button>
             <button
               onClick={() => { onForward(message); setShowMenu(false); }}
-              className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 flex items-center gap-3 text-gray-900"
+              className={`w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 ${
+                isSent ? "hover:bg-gray-50 text-gray-900" : "hover:bg-slate-800 text-slate-100"
+              }`}
             >
               <Forward className="w-4 h-4" /> Forward
             </button>
@@ -298,7 +318,9 @@ const MessageBubble = ({
         {showReactPicker && (
           <div
             ref={menuRef}
-            className="absolute left-1/2 -translate-x-1/2 bottom-8 bg-white rounded-full shadow-lg border border-gray-200 px-3 py-2 flex gap-2 z-20"
+            className={`absolute left-1/2 -translate-x-1/2 bottom-8 rounded-full shadow-lg border px-3 py-2 flex gap-2 z-20 ${
+              isSent ? "bg-white border-gray-200" : "bg-slate-900 border-slate-700"
+            }`}
           >
             {allowedReactions.map(({ emoji, label }) => (
               <button
