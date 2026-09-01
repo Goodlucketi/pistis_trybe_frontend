@@ -263,6 +263,14 @@ const PostCard = ({ post, variant = "default", isOwnPost = false, onLike, onDele
             </div>
           </div>
 
+          {post.body?.trim() && (
+            <div className="mb-4">
+              <p className="text-gray-800 leading-relaxed text-sm sm:text-[15px] whitespace-pre-line break-words">
+                {post.body}
+              </p>
+            </div>
+          )}
+
           {/* Original post content in a nested card */}
           <div className="bg-gray-50 rounded-xl p-4 mb-4">
             {isReshare && displayPost && displayPost !== post ? (
