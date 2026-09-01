@@ -75,7 +75,7 @@ export default function Profile() {
   return (
     <div className="relative min-h-screen pb-12">
       <div className="overflow-auto md:mr-0 md:ml-0 w-full px-2 py-2">
-        <div className="space-y-6 sm:space-y-10 border mb-3 border-[#E8E8E8] bg-white p-4 sm:p-6 shadow rounded-2xl">
+        <div className="space-y-6 sm:space-y-10 border mb-3 border-[#E8E8E8] dark:border-slate-700 bg-white dark:bg-slate-900 p-4 sm:p-6 shadow rounded-2xl">
           <ProfileTopBlock user={profileUser} />
         </div>
 

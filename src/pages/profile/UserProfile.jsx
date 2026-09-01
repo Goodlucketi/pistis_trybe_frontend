@@ -89,7 +89,7 @@ export default function UserProfile() {
         </button>
 
         {/* Profile card */}
-        <div className="border mb-3 border-[#E8E8E8] bg-white p-4 sm:p-6 shadow rounded-2xl">
+        <div className="border mb-3 border-[#E8E8E8] dark:border-slate-700 bg-white dark:bg-slate-900 p-4 sm:p-6 shadow rounded-2xl">
           <div className="flex justify-between items-start gap-4">
             <div className="flex flex-col gap-4">
               <div
@@ -110,16 +110,16 @@ export default function UserProfile() {
               </div>
 
               <div>
-                <h2 className="text-xl sm:text-2xl font-semibold text-black">
+                <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-slate-100">
                   {profileUser.fullName || "No name set"}
                 </h2>
                 {profileUser.biography && (
-                  <p className="text-sm text-gray-500 mt-1 max-w-sm">{profileUser.biography}</p>
+                  <p className="text-sm text-gray-500 dark:text-slate-400 mt-1 max-w-sm">{profileUser.biography}</p>
                 )}
-                <div className="flex flex-wrap gap-4 mt-3 text-xs sm:text-sm text-gray-600">
-                  <span><strong className="text-black">{followersData?.followers?.length || 0}</strong> Followers</span>
-                  <span><strong className="text-black">{followingData?.following?.length || 0}</strong> Following</span>
-                  <span><strong className="text-black">{postsData?.posts?.length || 0}</strong> Posts</span>
+                <div className="flex flex-wrap gap-4 mt-3 text-xs sm:text-sm text-gray-600 dark:text-slate-300">
+                  <span><strong className="text-gray-900 dark:text-slate-100">{followersData?.followers?.length || 0}</strong> Followers</span>
+                  <span><strong className="text-gray-900 dark:text-slate-100">{followingData?.following?.length || 0}</strong> Following</span>
+                  <span><strong className="text-gray-900 dark:text-slate-100">{postsData?.posts?.length || 0}</strong> Posts</span>
                 </div>
               </div>
             </div>
@@ -129,7 +129,7 @@ export default function UserProfile() {
                 <button
                   onClick={() => messageMutation.mutate()}
                   disabled={messageMutation.isPending}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-300 text-sm font-medium hover:bg-gray-50 transition disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-300 dark:border-slate-600 text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-800 transition disabled:opacity-50 text-gray-700 dark:text-slate-200"
                 >
                   <MessageCircle className="w-4 h-4" /> Message
                 </button>
@@ -151,8 +151,8 @@ export default function UserProfile() {
 
         {/* Posts */}
         <div className="space-y-4">
-          <div className="bg-white rounded-2xl px-4 py-4 shadow-sm border border-gray-200">
-            <h2 className="text-lg font-bold text-gray-900">Posts</h2>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl px-4 py-4 shadow-sm border border-gray-200 dark:border-slate-700">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-slate-100">Posts</h2>
           </div>
           <ActivityContent
             activeTab={activeTab}

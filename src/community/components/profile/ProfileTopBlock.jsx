@@ -47,7 +47,7 @@ export default function ProfileTopBlock({ user }) {
   ];
 
   return (
-    <div className="w-full bg-[#fff] rounded-2xl flex justify-between items-start gap-4">
+    <div className="w-full bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-700 flex justify-between items-start gap-4 p-4 sm:p-6 shadow-sm">
       {/* LEFT SIDE */}
       <div className="flex flex-col gap-4 sm:gap-6 min-w-0 flex-1">
         {/* Avatar — clickable to view full size */}
@@ -65,27 +65,27 @@ export default function ProfileTopBlock({ user }) {
         </div>
 
         <div className="flex flex-col min-w-0">
-          <h2 className="text-xl sm:text-2xl font-semibold text-black truncate">
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-slate-100 truncate">
             {isEmpty ? "No profile yet" : user.name || "Complete your profile"}
           </h2>
           {!isEmpty && !user.name && (
-            <p className="text-xs text-[#401667] mt-1">👉 Tap the menu to add your name and bio</p>
+            <p className="text-xs text-[#401667] dark:text-purple-300 mt-1">👉 Tap the menu to add your name and bio</p>
           )}
 
-          <div className="flex flex-wrap gap-4 sm:gap-6 mt-3 text-xs sm:text-sm text-gray-600">
+          <div className="flex flex-wrap gap-4 sm:gap-6 mt-3 text-xs sm:text-sm text-gray-600 dark:text-slate-300">
             <span className="whitespace-nowrap">
-              <strong className="text-black">{isEmpty ? 0 : user.followers?.length || 0}</strong> Followers
+              <strong className="text-gray-900 dark:text-slate-100">{isEmpty ? 0 : user.followers?.length || 0}</strong> Followers
             </span>
             <span className="whitespace-nowrap">
-              <strong className="text-black">{isEmpty ? 0 : user.following?.length || 0}</strong> Following
+              <strong className="text-gray-900 dark:text-slate-100">{isEmpty ? 0 : user.following?.length || 0}</strong> Following
             </span>
             <span className="whitespace-nowrap">
-              <strong className="text-black">{isEmpty ? 0 : user.posts?.length || 0}</strong> Posts
+              <strong className="text-gray-900 dark:text-slate-100">{isEmpty ? 0 : user.posts?.length || 0}</strong> Posts
             </span>
           </div>
 
           {isEmpty && (
-            <p className="text-xs sm:text-sm text-gray-500 mt-2">Create your profile to start connecting.</p>
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 mt-2">Create your profile to start connecting.</p>
           )}
         </div>
       </div>
@@ -94,21 +94,21 @@ export default function ProfileTopBlock({ user }) {
       <div className="relative shrink-0" ref={menuRef}>
         <button
           onClick={() => setShowMenu(!showMenu)}
-          className="p-2 hover:bg-gray-100 rounded-full transition group relative"
+          className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition group relative text-gray-600 dark:text-slate-200"
           aria-label="Profile options"
         >
-          <MoreVertical className="w-5 h-5 text-gray-600" />
+          <MoreVertical className="w-5 h-5" />
           <span className="hidden md:block absolute -top-8 right-0 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap">
             Options
           </span>
         </button>
 
         {showMenu && (
-          <div className="absolute right-0 top-10 w-36 bg-white border border-gray-200 rounded-xl shadow-md z-20 py-1">
+          <div className="absolute right-0 top-10 w-36 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl shadow-md z-20 py-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
               const baseClasses = `w-full flex items-center gap-3 px-3 py-2 text-sm transition ${
-                item.danger ? "text-red-600 hover:bg-red-50" : "text-gray-700 hover:bg-gray-50"
+                item.danger ? "text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10" : "text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800"
               }`;
               if (item.to) {
                 return (
