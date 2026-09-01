@@ -9,6 +9,8 @@ import { logoutUser } from "../../../services/AuthService";
 import CreatePostModal from "../groups/CreatePostModal";
 import CreateGroupModal from "../groups/CreateGroupModal";
 import { getMe } from "../../../services/UserService";
+import emailjs from "@emailjs/browser";
+import { toast } from "react-toastify";
 
 export default function Sidebar({ isOpen, onClose, isMobile = false }) {
   const location = useLocation();
@@ -45,20 +47,32 @@ export default function Sidebar({ isOpen, onClose, isMobile = false }) {
     setFeedbackForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleFeedbackSubmit = (e) => {
+  const handleFeedbackSubmit = async (e) => {
     e.preventDefault();
 
-    const payload = {
-      ...feedbackForm,
-      submittedAt: new Date().toISOString(),
+    const templateParams = {
+      from_name:  feedbackForm.name,
+      from_email: feedbackForm.email,
+      message:    feedbackForm.feedback,
+      to_name:    "Pistis Trybe Team",
+      sent_at:    new Date().toLocaleString(),
     };
 
-    const existing = JSON.parse(localStorage.getItem("pistis-feedback-submissions") || "[]");
-    localStorage.setItem("pistis-feedback-submissions", JSON.stringify([payload, ...existing]));
+    try {
+      await emailjs.send(
+        import.meta.env.VITE_EMAILJS_SERVICE_ID,
+        import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+        templateParams,
+        import.meta.env.VITE_EMAILJS_PUBLIC_KEY
+      );
 
-    setFeedbackForm({ name: "", email: "", feedback: "" });
-    setShowFeedbackModal(false);
-    setShowFeedbackSuccess(true);
+      setFeedbackForm({ name: "", email: "", feedback: "" });
+      setShowFeedbackModal(false);
+      setShowFeedbackSuccess(true);
+    } catch (err) {
+      console.error("EmailJS error:", err);
+      toast.error("Failed to send feedback. Please try again.");
+    }
   };
 
   const renderLink = (link, isQuick = false) => {
