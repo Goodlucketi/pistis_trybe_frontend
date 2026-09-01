@@ -12,6 +12,14 @@ export const createPost = async (formData) => {
   return response.data.data;
 };
 
+export const resharePost = async (postId, post, caption = "") => {
+  const response = await api.post(`/posts/${postId}/reshare`, {
+    originalPostId: post._id || post.id,
+    caption: caption?.trim?.() || "",
+  });
+  return response.data.data;
+};
+
 export const toggleLike = async (postId) => {
   const response = await api.post(`/posts/${postId}/like`);
   return response.data.data;
@@ -24,5 +32,10 @@ export const editPost = async (postId, data) => {
 
 export const deletePost = async (postId) => {
   const response = await api.delete(`/posts/${postId}`);
+  return response.data.data;
+};
+
+export const getPost = async (postId) => {
+  const response = await api.get(`/posts/${postId}`);
   return response.data.data;
 };
