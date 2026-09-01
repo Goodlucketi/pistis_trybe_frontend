@@ -1,7 +1,7 @@
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { X, LogOut } from "lucide-react";
+import { X, LogOut, MessageSquareText, CheckCircle2, Send } from "lucide-react";
 import clsx from "clsx";
 import { FiHome, FiUsers, FiBookOpen, FiMessageCircle, FiEdit2, FiChevronLeft } from "react-icons/fi";
 import logo from "../../../assets/logos/sidebar_logo.png";
@@ -16,6 +16,9 @@ export default function Sidebar({ isOpen, onClose, isMobile = false }) {
   const [desktopCollapsed, setDesktopCollapsed] = useState(false);
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showFeedbackSuccess, setShowFeedbackSuccess] = useState(false);
+  const [feedbackForm, setFeedbackForm] = useState({ name: "", email: "", feedback: "" });
 
   const collapsed = isMobile ? false : desktopCollapsed;
   const isMessagesPage = location.pathname.startsWith("/dashboard/messages");
@@ -34,7 +37,29 @@ export default function Sidebar({ isOpen, onClose, isMobile = false }) {
   const quickLinks = [
     { name: "Create New Post", onClick: () => setShowCreatePost(true), icon: <FiEdit2 /> },
     { name: "Create New Group", onClick: () => setShowCreateGroup(true), icon: <FiUsers /> },
+    { name: "Send Feedback", onClick: () => setShowFeedbackModal(true), icon: <MessageSquareText /> },
   ];
+
+  const handleFeedbackChange = (e) => {
+    const { name, value } = e.target;
+    setFeedbackForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleFeedbackSubmit = (e) => {
+    e.preventDefault();
+
+    const payload = {
+      ...feedbackForm,
+      submittedAt: new Date().toISOString(),
+    };
+
+    const existing = JSON.parse(localStorage.getItem("pistis-feedback-submissions") || "[]");
+    localStorage.setItem("pistis-feedback-submissions", JSON.stringify([payload, ...existing]));
+
+    setFeedbackForm({ name: "", email: "", feedback: "" });
+    setShowFeedbackModal(false);
+    setShowFeedbackSuccess(true);
+  };
 
   const renderLink = (link, isQuick = false) => {
     const isActive = !isQuick && location.pathname === link.path;
@@ -124,6 +149,89 @@ export default function Sidebar({ isOpen, onClose, isMobile = false }) {
 
       <CreatePostModal isOpen={showCreatePost} onClose={() => setShowCreatePost(false)} />
       <CreateGroupModal isOpen={showCreateGroup} onClose={() => setShowCreateGroup(false)} />
+
+      {showFeedbackModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white text-slate-900 shadow-2xl border border-slate-200 overflow-hidden">
+            <div className="flex items-center justify-between bg-[#401667] px-5 py-4 text-white">
+              <div>
+                <p className="text-lg font-semibold">Share your feedback</p>
+                <p className="text-xs text-purple-100">We value your thoughts</p>
+              </div>
+              <button onClick={() => setShowFeedbackModal(false)} className="p-1.5 rounded-full hover:bg-white/10 transition" aria-label="Close feedback form">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleFeedbackSubmit} className="p-5 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Name</label>
+                <input
+                  type="text"
+                  name="name"
+                  value={feedbackForm.name}
+                  onChange={handleFeedbackChange}
+                  required
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100"
+                  placeholder="Your name"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={feedbackForm.email}
+                  onChange={handleFeedbackChange}
+                  required
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100"
+                  placeholder="you@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Feedback</label>
+                <textarea
+                  name="feedback"
+                  value={feedbackForm.feedback}
+                  onChange={handleFeedbackChange}
+                  required
+                  rows={5}
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none resize-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100"
+                  placeholder="Tell us what you think..."
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#401667] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#2e1048] transition"
+              >
+                <Send className="w-4 h-4" />
+                Submit Feedback
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showFeedbackSuccess && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center shadow-2xl">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 text-white">
+              <CheckCircle2 className="h-8 w-8" />
+            </div>
+            <h3 className="text-xl font-bold text-emerald-900">Thank you for your feedback</h3>
+            <p className="mt-2 text-sm text-emerald-700">We will review it shortly.</p>
+            <button
+              onClick={() => setShowFeedbackSuccess(false)}
+              className="mt-5 w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 transition"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
