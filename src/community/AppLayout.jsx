@@ -26,10 +26,10 @@ const AppLayout = () => {
   );
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen w-full max-w-full overflow-x-clip">
       <MobileTopBar onMenuClick={() => {}} />
 
-      <div className="flex w-full mx-auto gap-6 px-4 md:px-10 pt-4 lg:pt-6">
+      <div className="flex w-full min-w-0 mx-auto gap-6 px-3 sm:px-4 md:px-10 pt-4 lg:pt-6">
         {/* Desktop Sidebar */}
         <div className="hidden lg:block shrink-0">
           <ErrorBoundary message="Sidebar failed to load.">
@@ -38,7 +38,7 @@ const AppLayout = () => {
         </div>
 
         {/* Main Content */}
-        <main className={`flex-1 ${hideRightPanel ? "max-w-full" : "max-w-[1280px]"} mx-auto min-h-[calc(100vh-2rem)] pb-20 lg:pb-0`}>
+        <main className={`flex-1 min-w-0 w-full ${hideRightPanel ? "max-w-full" : "max-w-[1280px]"} mx-auto min-h-[calc(100vh-2rem)] pb-20 lg:pb-0`}>
           {/* Mobile Devotional */}
           {isMobile && !hideDevotionalOnMobile && (
             <div className="lg:hidden mb-4">

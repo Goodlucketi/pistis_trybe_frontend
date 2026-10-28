@@ -47,9 +47,9 @@ export default function ProfileTopBlock({ user }) {
   ];
 
   return (
-    <div className="w-full bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-700 flex justify-between items-start gap-4 p-4 sm:p-6 shadow-sm">
+    <div className="w-full bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-700 flex justify-between items-start gap-2 sm:gap-4 p-4 sm:p-6 shadow-sm min-w-0 overflow-hidden">
       {/* LEFT SIDE */}
-      <div className="flex flex-col gap-4 sm:gap-6 min-w-0 flex-1">
+      <div className="flex flex-col gap-3 sm:gap-6 min-w-0 flex-1">
         {/* Avatar — clickable to view full size */}
         <div
           className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gray-200 flex items-center justify-center shrink-0 overflow-hidden ${
@@ -65,14 +65,14 @@ export default function ProfileTopBlock({ user }) {
         </div>
 
         <div className="flex flex-col min-w-0">
-          <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-slate-100 truncate">
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-slate-100 break-words">
             {isEmpty ? "No profile yet" : user.name || "Complete your profile"}
           </h2>
           {!isEmpty && !user.name && (
             <p className="text-xs text-[#401667] dark:text-purple-300 mt-1">👉 Tap the menu to add your name and bio</p>
           )}
 
-          <div className="flex flex-wrap gap-4 sm:gap-6 mt-3 text-xs sm:text-sm text-gray-600 dark:text-slate-300">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 sm:gap-6 mt-3 text-xs sm:text-sm text-gray-600 dark:text-slate-300">
             <Link to={isEmpty ? "#" : `/dashboard/users/${user._id}/connections?tab=followers`} className="whitespace-nowrap hover:underline">
               <strong className="text-gray-900 dark:text-slate-100">{isEmpty ? 0 : user.followersCount || 0}</strong> Followers
             </Link>

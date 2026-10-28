@@ -6,7 +6,6 @@ import Button from "../../shared/Btn";
 import { verifyEmail, resendOtp } from "../../services/AuthService";
 
 const CODE_LENGTH = 6;
-const RESEND_SECONDS = 60;
 
 const VerifyEmail = () => {
   const navigate = useNavigate();
@@ -17,7 +16,7 @@ const VerifyEmail = () => {
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState("");
   const [info, setInfo] = useState("");
-  const [cooldown, setCooldown] = useState(RESEND_SECONDS);
+  const [cooldown, setCooldown] = useState(location.state?.resendAfterSeconds ?? 0);
   const inputs = useRef([]);
 
   useEffect(() => {
@@ -88,9 +87,9 @@ const VerifyEmail = () => {
     try {
       setServerError("");
       setInfo("");
-      await resendOtp({ email });
-      setInfo("A new code is on its way.");
-      setCooldown(RESEND_SECONDS);
+      const { message, data } = await resendOtp({ email });
+      setInfo(data?.sent ? "A new code is on its way." : message);
+      setCooldown(data?.resendAfterSeconds ?? 0);
     } catch (error) {
       setServerError(error?.message || "Could not resend the code.");
     }

@@ -29,32 +29,32 @@ const MobileTopBar = ({ onMenuClick }) => {
   const unreadCount = notifData?.unreadCount || 0;
 
   return (
-    <header className="sticky flex items-center justify-between top-0 z-30 ob-topbar px-5 md:px-10 py-2">
+    <header className="sticky flex items-center justify-between top-0 z-30 ob-topbar px-3 sm:px-5 md:px-10 py-2 gap-2 w-full max-w-full">
       {/* Logo */}
       <button onClick={onMenuClick} className="flex items-center shrink-0 md:py-3 gap-2">
         <Link to="/dashboard/feed" className="flex items-center gap-2">
           <LogoMark className="w-8 h-8" />
-          <span className="md:text-lg font-semibold text-gray-800 dark:text-slate-100">Pistis Trybe</span>
+          <span className="hidden sm:inline md:text-lg font-semibold text-gray-800 dark:text-slate-100">Pistis Trybe</span>
         </Link>
       </button>
 
-      <div className="flex items-center justify-between md:gap-10 px-4 py-3 w-full md:w-9/12">
+      <div className="flex items-center justify-between gap-2 md:gap-10 px-0 sm:px-4 py-3 min-w-0 flex-1 md:flex-none w-full md:w-9/12">
         {/* Search Bar */}
-        <div className="flex-1">
-          <form onSubmit={handleSearch} className="flex items-center gap-2 bg-gray-100 dark:bg-slate-900 rounded-xl px-3 py-2 md:w-10/12 border border-transparent dark:border-slate-700">
+        <div className="flex-1 min-w-0">
+          <form onSubmit={handleSearch} className="flex items-center gap-2 bg-gray-100 dark:bg-slate-900 rounded-xl px-3 py-2 w-full md:w-10/12 border border-transparent dark:border-slate-700">
             <Search size={16} className="text-gray-500 dark:text-slate-400" />
             <input
               type="text"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               placeholder="Search people..."
-              className="bg-transparent outline-none text-sm placeholder:text-gray-400 dark:placeholder:text-slate-400 text-gray-800 dark:text-slate-100 md:p-2 w-full"
+              className="bg-transparent outline-none text-sm placeholder:text-gray-400 dark:placeholder:text-slate-400 text-gray-800 dark:text-slate-100 md:p-2 w-full min-w-0"
             />
           </form>
         </div>
 
         {/* Right Icons */}
-        <div className="flex items-center gap-3 md:gap-5">
+        <div className="flex items-center gap-0.5 sm:gap-3 md:gap-5 shrink-0">
           {/* FIX: Notification bell wired up */}
           <div className="relative">
             <button
