@@ -88,7 +88,7 @@ export default function Sidebar({ isOpen, onClose, isMobile = false }) {
     }
     return (
       <Link key={link.name} to={link.path} onClick={() => isMobile && onClose?.()}
-        className={clsx("flex items-center transition-all rounded-lg px-3 py-2.5 text-white", collapsed ? "justify-center" : "justify-start", isActive ? "bg-[#6A4094] font-semibold" : "hover:bg-white/10")}>
+        className={clsx("flex items-center transition-all rounded-lg px-3 py-2.5 text-white", collapsed ? "justify-center" : "justify-start", isActive ? "bg-white/15 font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_6px_16px_-8px_rgba(0,0,0,0.6)]" : "text-white/80 hover:bg-white/10 hover:text-white")}>
         <span className="w-5 h-5 flex items-center justify-center shrink-0">{link.icon}</span>
         {!collapsed && <span className="ml-3 text-sm">{link.name}</span>}
       </Link>
@@ -96,7 +96,7 @@ export default function Sidebar({ isOpen, onClose, isMobile = false }) {
   };
 
   const sidebarClasses = clsx(
-    "bg-[#401667] text-white flex flex-col justify-between p-3 rounded-xl transition-all duration-300",
+    "ob-sidebar text-white flex flex-col justify-between p-3 rounded-2xl transition-all duration-300",
     isMobile ? "fixed top-0 left-0 z-50 w-64 h-screen transform"
       : clsx(collapsed ? "w-20" : "w-64", "sticky hidden lg:flex",
         isMessagesPage ? "top-0 h-[95vh] rounded-none" : "top-25 h-[calc(100vh-7rem)]")
@@ -136,7 +136,7 @@ export default function Sidebar({ isOpen, onClose, isMobile = false }) {
               </div>
             </div>
           ) : (
-            <div className="bg-[#6A4094] border border-[#B58DD44D] rounded-lg p-3 flex flex-col gap-2">
+            <div className="bg-white/10 border border-white/15 backdrop-blur-md rounded-xl p-3 flex flex-col gap-2">
               <div className="flex items-center gap-2">
                 {user?.avatarUrl ? (
                   <img src={user.avatarUrl} alt="avatar" className="w-8 h-8 rounded-full object-cover shrink-0" />
@@ -153,7 +153,7 @@ export default function Sidebar({ isOpen, onClose, isMobile = false }) {
               <button onClick={handleLogout} className="w-full px-3 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/40 text-red-300 hover:text-white text-xs font-medium transition flex items-center justify-center gap-2">
                 <LogOut className="w-3.5 h-3.5" /> Sign Out
               </button>
-              <Link to="/dashboard/profile" onClick={() => isMobile && onClose?.()} className="w-full px-3 py-2 rounded-lg bg-[#401667] hover:bg-[#2e1048] text-white text-xs font-medium transition text-center">
+              <Link to="/dashboard/profile" onClick={() => isMobile && onClose?.()} className="w-full px-3 py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs font-medium transition text-center">
                 View Account
               </Link>
             </div>

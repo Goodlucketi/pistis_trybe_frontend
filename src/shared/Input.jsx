@@ -17,7 +17,7 @@ const Input = ({
   return (
     <div className="flex flex-col gap-1 w-full">
       {label && (
-        <label htmlFor={name} className="text-sm font-medium text-gray-600">
+        <label htmlFor={name} className="text-sm font-medium text-gray-600 dark:text-slate-300">
           {label}
         </label>
       )}
@@ -30,10 +30,10 @@ const Input = ({
           value={value}
           onChange={onChange}
           placeholder={placeholder}
-          className={`w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 transition ${
+          className={`w-full px-4 py-3 rounded-xl border bg-white/60 text-gray-900 placeholder:text-gray-400 focus:outline-none transition ${
             error
-              ? "border-red-500 focus:ring-red-200"
-              : "border-gray-300 focus:ring-blue-200 focus:border-blue-500"
+              ? "border-red-500"
+              : "border-gray-300"
           } ${isPassword ? "pr-12" : ""}`}
         />
 

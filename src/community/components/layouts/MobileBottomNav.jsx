@@ -45,7 +45,7 @@ const navItems = [
 const MobileBottomNav = () => {
     const { activeView, setActiveView } = useCommunityStore();
     return (
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 shadow-md bg-[#4B1D83]">
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#1a0b2e]/85 backdrop-blur-xl border-t border-white/10 pb-[env(safe-area-inset-bottom)]">
         <div className="flex items-center justify-between px-2 py-2">
             {navItems.map((item) => {
             const Icon = item.icon;
@@ -57,8 +57,8 @@ const MobileBottomNav = () => {
                     onClick={() => setActiveView(item.key)}
                     className={clsx("flex flex-col items-center justify-center flex-1 py-1 rounded-xl transition",
                         isActive
-                            ? "text-slate-100 bg-slate-100/20"
-                            : "text-slate-100"
+                            ? "text-white bg-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]"
+                            : "text-white/65 hover:text-white"
                         )
                     }
                 >

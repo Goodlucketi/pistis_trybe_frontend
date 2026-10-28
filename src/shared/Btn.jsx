@@ -8,12 +8,12 @@ const Button = ({
   ...props
 }) => {
   const baseStyles =
-    "w-full py-3 rounded-lg font-semibold transition duration-200 disabled:opacity-60 disabled:cursor-not-allowed";
+    "w-full py-3 rounded-xl font-semibold tracking-tight transition duration-200 active:scale-[0.99] disabled:cursor-not-allowed";
 
   const variants = {
-    primary: "bg-gray-300 text-white",
-    active: "bg-[#401667] text-white hover:bg-blue-700",
-    secondary: "bg-gray-200 text-gray-800 hover:bg-gray-300",
+    primary: "bg-gray-300 text-white/90 opacity-70 !shadow-none",
+    active: "bg-[#401667] text-white",
+    secondary: "bg-gray-200 text-gray-800 hover:bg-gray-300 border border-gray-200",
   };
 
   return (

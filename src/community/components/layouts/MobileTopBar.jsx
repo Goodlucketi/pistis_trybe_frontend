@@ -20,7 +20,7 @@ const MobileTopBar = ({ onMenuClick }) => {
   const unreadCount = notifData?.unreadCount || 0;
 
   return (
-    <header className="sticky flex items-center justify-between top-0 z-30 bg-white dark:bg-[#020817] border-b border-gray-100 dark:border-slate-800 px-5 md:px-10 py-2">
+    <header className="sticky flex items-center justify-between top-0 z-30 ob-topbar px-5 md:px-10 py-2">
       {/* Logo */}
       <button onClick={onMenuClick} className="flex items-center shrink-0 md:py-3 gap-2">
         <Link to="/dashboard/feed" className="flex items-center gap-2">
