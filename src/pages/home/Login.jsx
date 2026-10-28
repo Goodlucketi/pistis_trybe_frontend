@@ -64,8 +64,8 @@ const Login = () => {
     } catch (error) {
       if (error?.details?.includes?.("EMAIL_NOT_VERIFIED")) {
         sessionStorage.setItem("pistis-pending-email", values.email);
-        resendOtp({ email: values.email }).catch(() => {});
-        navigate("/verify-email", { state: { email: values.email } });
+        const resend = await resendOtp({ email: values.email }).catch(() => null);
+        navigate("/verify-email", { state: { email: values.email, resendAfterSeconds: resend?.data?.resendAfterSeconds } });
         return;
       }
       setServerError(error?.message || "Login failed. Please check your credentials.");
