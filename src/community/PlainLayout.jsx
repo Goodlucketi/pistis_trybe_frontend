@@ -4,7 +4,7 @@ import MobileBottomNav from "./components/layouts/MobileBottomNav";
 
 const PlainLayout = () => {
   return (
-    <div className="h-screen w-screen bg-gray-50">
+    <div className="h-screen w-screen">
       {/* Center container with max-width for desktop */}
       <div className="h-full p-8 w-full lg:w-full lg:mx-auto flex overflow-hidden">
         {/* Desktop Sidebar */}

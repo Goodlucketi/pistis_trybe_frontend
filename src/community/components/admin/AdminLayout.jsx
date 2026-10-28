@@ -124,16 +124,16 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen overflow-hidden">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex flex-col w-56 bg-[#401667] shrink-0">
+      <aside className="hidden lg:flex flex-col w-56 ob-sidebar rounded-none shrink-0">
         <SidebarContent {...sidebarProps} />
       </aside>
 
       {/* Mobile Sidebar */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 lg:hidden flex">
-          <div className="w-56 bg-[#401667] flex flex-col shrink-0">
+          <div className="w-56 ob-sidebar flex flex-col shrink-0">
             <SidebarContent {...sidebarProps} />
           </div>
           <div className="flex-1 bg-black/50" onClick={() => setSidebarOpen(false)} />

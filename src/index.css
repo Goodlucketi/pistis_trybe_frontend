@@ -268,3 +268,26 @@ html.dark .obsidian-switch__thumb { transform: translateX(1.6rem); }
   -webkit-backdrop-filter: blur(22px) saturate(1.4);
   backdrop-filter: blur(22px) saturate(1.4);
 }
+
+/* ---------- Secondary brand fills & tinted panels ---------- */
+.bg-purple-600, .bg-\[\#6D28D9\], .bg-\[\#4B1D83\]:not(nav) {
+  background-image: linear-gradient(135deg, var(--ob-brand-2), var(--ob-brand));
+  box-shadow: 0 6px 16px -6px rgba(64, 22, 103, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+.bg-purple-600:hover, .bg-\[\#6D28D9\]:hover { filter: brightness(1.12); }
+
+.bg-gradient-to-br.to-purple-50 {
+  background-image: linear-gradient(135deg, rgba(106, 64, 148, 0.1), rgba(181, 141, 212, 0.16));
+  border-color: var(--ob-border-strong);
+}
+html.dark .bg-gradient-to-br.to-purple-50 {
+  background-image: linear-gradient(135deg, rgba(106, 64, 148, 0.28), rgba(32, 25, 47, 0.7));
+}
+html.dark .border-purple-100, html.dark .border-purple-200, html.dark .border-purple-300 {
+  border-color: var(--ob-border-strong) !important;
+}
+html.dark .text-purple-800 { color: #cdb0ec !important; }
+
+/* Lists, rows and dividers feel lighter */
+.divide-y > :not(:last-child), .border-b, .border-t { border-color: var(--ob-border); }
+.hover\:bg-gray-50:hover, .hover\:bg-gray-100:hover { background-color: rgba(106, 64, 148, 0.07); }
