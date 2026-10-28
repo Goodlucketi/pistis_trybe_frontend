@@ -3,7 +3,7 @@ import ProfileTopBlock from "../../community/components/profile/ProfileTopBlock"
 import ActivityTabs from "../../community/components/profile/Activitytabs";
 import ActivityContent from "../../community/components/profile/ActivityContent";
 import { getMe } from '../../services/UserService';
-import { getFollowers, getFollowing } from '../../services/UserService';
+import { getUserById } from '../../services/UserService';
 import { getUserPosts } from '../../services/UserService';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
@@ -19,15 +19,9 @@ export default function Profile() {
     queryFn: getMe,
   });
 
-  const { data: followersData } = useQuery({
-    queryKey: ['followers', currentUser?._id],
-    queryFn: () => getFollowers(currentUser._id),
-    enabled: !!currentUser?._id,
-  });
-
-  const { data: followingData } = useQuery({
-    queryKey: ['following', currentUser?._id],
-    queryFn: () => getFollowing(currentUser._id),
+  const { data: stats } = useQuery({
+    queryKey: ['user', currentUser?._id],
+    queryFn: () => getUserById(currentUser._id),
     enabled: !!currentUser?._id,
   });
 
@@ -59,8 +53,8 @@ export default function Profile() {
     name: currentUser.fullName || currentUser.email,
     avatar: currentUser.avatarUrl,
     biography: currentUser.biography,
-    followers: followersData?.followers || [],
-    following: followingData?.following || [],
+    followersCount: stats?.followersCount || 0,
+    followingCount: stats?.followingCount || 0,
     posts: userPosts,
   } : null;
 

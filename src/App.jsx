@@ -30,6 +30,7 @@ import Feed from "./community/components/feed/Feed";
 import BibleReader from "./community/components/feed/BibleReader";
 import Messages from "./pages/messaging/MessagesPage";
 
+import Connections from "./pages/people/Connections";
 import People from "./pages/people/People";
 import UserProfile from './pages/profile/UserProfile';
 import Groups from "./community/components/feed/Groups";
@@ -108,6 +109,7 @@ function App() {
           <Route path="groups/:id/settings" element={<GroupSettings />} />
           <Route path="people" element={<People />} />
           <Route path="users/:userId" element={<UserProfile />} />
+          <Route path="users/:userId/connections" element={<Connections />} />
         </Route>
 
         {/* Protected Messages Routes WITHOUT Navbar */}

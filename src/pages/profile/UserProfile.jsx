@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, MessageCircle } from "lucide-react";
 import { getMe, getUserPosts, getUserById, toggleFollow } from "../../services/UserService";
@@ -106,8 +106,17 @@ export default function UserProfile() {
                   <p className="text-sm text-gray-500 dark:text-slate-400 mt-1 max-w-sm">{profileUser.biography}</p>
                 )}
                 <div className="flex flex-wrap gap-4 mt-3 text-xs sm:text-sm text-gray-600 dark:text-slate-300">
-                  <span><strong className="text-gray-900 dark:text-slate-100">{profileUser.followersCount || 0}</strong> Followers</span>
-                  <span><strong className="text-gray-900 dark:text-slate-100">{profileUser.followingCount || 0}</strong> Following</span>
+                  {[["followers", "Followers", profileUser.followersCount], ["following", "Following", profileUser.followingCount]].map(([tab, label, count]) =>
+                    profileUser.canViewConnections ? (
+                      <Link key={tab} to={`/dashboard/users/${userId}/connections?tab=${tab}`} className="hover:underline">
+                        <strong className="text-gray-900 dark:text-slate-100">{count || 0}</strong> {label}
+                      </Link>
+                    ) : (
+                      <span key={tab} title="Follow each other to see this list">
+                        <strong className="text-gray-900 dark:text-slate-100">{count || 0}</strong> {label}
+                      </span>
+                    )
+                  )}
                   <span><strong className="text-gray-900 dark:text-slate-100">{postsData?.posts?.length || 0}</strong> Posts</span>
                 </div>
               </div>

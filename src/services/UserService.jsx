@@ -20,13 +20,13 @@ export const getUserPosts = async (userId, page = 1, limit = 20) => {
   return response.data.data;
 };
 
-export const getFollowers = async (userId) => {
-  const response = await api.get(`/users/${userId}/followers`);
+export const getFollowers = async (userId, page = 1, limit = 30) => {
+  const response = await api.get(`/users/${userId}/followers`, { params: { page, limit } });
   return response.data.data;
 };
 
-export const getFollowing = async (userId) => {
-  const response = await api.get(`/users/${userId}/following`);
+export const getFollowing = async (userId, page = 1, limit = 30) => {
+  const response = await api.get(`/users/${userId}/following`, { params: { page, limit } });
   return response.data.data;
 };
 

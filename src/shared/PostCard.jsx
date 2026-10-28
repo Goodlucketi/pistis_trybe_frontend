@@ -67,11 +67,11 @@ const PostCard = ({ post, variant = "default", isOwnPost = false, onLike, onDele
 
   const { data: followingData } = useQuery({
     queryKey: ["following", currentUser?._id],
-    queryFn: () => getFollowing(currentUser?._id),
+    queryFn: () => getFollowing(currentUser?._id, 1, 50),
     enabled: !!currentUser?._id && !isOwnPost,
   });
 
-  const isFollowing = followingData?.following?.some(
+  const isFollowing = followingData?.users?.some(
     (u) => u._id?.toString() === authorId?.toString()
   );
 

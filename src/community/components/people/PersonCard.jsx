@@ -1,8 +1,12 @@
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { getMe } from "../../../services/UserService";
 import FollowButton from "./FollowButton";
 
 const PersonCard = ({ person, onFollowChange }) => {
   const navigate = useNavigate();
+  const { data: me } = useQuery({ queryKey: ["me"], queryFn: getMe });
+  const isMe = me?._id === person._id;
   const initial = person.fullName?.charAt(0)?.toUpperCase() || "?";
 
   return (
@@ -33,12 +37,14 @@ const PersonCard = ({ person, onFollowChange }) => {
         </p>
       </div>
 
-      <FollowButton
-        userId={person._id}
-        isFollowing={person.isFollowing}
-        followsYou={person.followsYou}
-        onChange={(following) => onFollowChange?.(person._id, following)}
-      />
+      {!isMe && (
+        <FollowButton
+          userId={person._id}
+          isFollowing={person.isFollowing}
+          followsYou={person.followsYou}
+          onChange={(following) => onFollowChange?.(person._id, following)}
+        />
+      )}
     </div>
   );
 };

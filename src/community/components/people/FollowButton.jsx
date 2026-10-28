@@ -11,7 +11,7 @@ const FollowButton = ({ userId, isFollowing, followsYou, onChange, className }) 
     mutationFn: () => toggleFollow(userId),
     onSuccess: (result) => {
       onChange?.(result.following);
-      ["user", "people", "followers", "following", "feed"].forEach((key) =>
+      ["user", "people", "connections", "followers", "following", "feed"].forEach((key) =>
         queryClient.invalidateQueries({ queryKey: [key] })
       );
     },
