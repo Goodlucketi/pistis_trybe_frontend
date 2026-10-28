@@ -40,3 +40,13 @@ export const searchUsers = async (query) => {
   const response = await api.get("/users/find", { params: { q: query } });
   return response.data.data;
 };
+
+export const discoverUsers = async ({ query = "", page = 1, limit = 20 } = {}) => {
+  const response = await api.get("/users/discover", { params: { q: query || undefined, page, limit } });
+  return response.data.data;
+};
+
+export const getUserById = async (userId) => {
+  const response = await api.get(`/users/${userId}`);
+  return response.data.data;
+};

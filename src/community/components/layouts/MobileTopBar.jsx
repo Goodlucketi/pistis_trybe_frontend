@@ -2,14 +2,23 @@ import { useState } from "react";
 import { Bell, Search } from "lucide-react";
 import ThemeToggle from "../../../theme/ThemeToggle";
 import LogoMark from "../../../shared/LogoMark";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getMe } from "../../../services/UserService";
 import { getNotifications } from "../../../services/NotificationService";
 import NotificationsPanel from "./NotificationsPanel";
 
 const MobileTopBar = ({ onMenuClick }) => {
+  const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [searchText, setSearchText] = useState("");
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    const q = searchText.trim();
+    navigate(q ? `/dashboard/people?q=${encodeURIComponent(q)}` : "/dashboard/people");
+    setSearchText("");
+  };
   const { data: user } = useQuery({ queryKey: ["me"], queryFn: getMe });
 
   const { data: notifData } = useQuery({
@@ -32,14 +41,16 @@ const MobileTopBar = ({ onMenuClick }) => {
       <div className="flex items-center justify-between md:gap-10 px-4 py-3 w-full md:w-9/12">
         {/* Search Bar */}
         <div className="flex-1">
-          <div className="flex items-center gap-2 bg-gray-100 dark:bg-slate-900 rounded-xl px-3 py-2 md:w-10/12 border border-transparent dark:border-slate-700">
+          <form onSubmit={handleSearch} className="flex items-center gap-2 bg-gray-100 dark:bg-slate-900 rounded-xl px-3 py-2 md:w-10/12 border border-transparent dark:border-slate-700">
             <Search size={16} className="text-gray-500 dark:text-slate-400" />
             <input
               type="text"
-              placeholder="Search..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              placeholder="Search people..."
               className="bg-transparent outline-none text-sm placeholder:text-gray-400 dark:placeholder:text-slate-400 text-gray-800 dark:text-slate-100 md:p-2 w-full"
             />
-          </div>
+          </form>
         </div>
 
         {/* Right Icons */}

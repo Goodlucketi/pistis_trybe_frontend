@@ -3,6 +3,7 @@ import {
   BookOpen,
   Users,
   MessageCircle,
+  UserPlus,
   User,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -27,6 +28,12 @@ const navItems = [
     label: "Groups", 
     icon: Users, 
     to: "/dashboard/groups" 
+  },
+  {
+    key: "people",
+    label: "People",
+    icon: UserPlus,
+    to: "/dashboard/people"
   },
   { 
     key: "messages", 

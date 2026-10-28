@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { X, LogOut, MessageSquareText, CheckCircle2, Send } from "lucide-react";
 import clsx from "clsx";
-import { FiHome, FiUsers, FiBookOpen, FiMessageCircle, FiEdit2, FiChevronLeft } from "react-icons/fi";
+import { FiHome, FiUsers, FiBookOpen, FiMessageCircle, FiUserPlus, FiEdit2, FiChevronLeft } from "react-icons/fi";
 import LogoMark from "../../../shared/LogoMark";
 import { logoutUser } from "../../../services/AuthService";
 import CreatePostModal from "../groups/CreatePostModal";
@@ -33,6 +33,7 @@ export default function Sidebar({ isOpen, onClose, isMobile = false }) {
     { name: "Feed", path: "/dashboard/feed", icon: <FiHome /> },
     { name: "Bible", path: "/dashboard/bible", icon: <FiBookOpen /> },
     { name: "Groups", path: "/dashboard/groups", icon: <FiUsers /> },
+    { name: "People", path: "/dashboard/people", icon: <FiUserPlus /> },
     { name: "Messages", path: "/dashboard/messages", icon: <FiMessageCircle /> },
   ];
 
