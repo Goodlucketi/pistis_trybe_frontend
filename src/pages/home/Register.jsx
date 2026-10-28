@@ -39,7 +39,7 @@ const Register = () => {
       setSuccessMessage("");
       const result = await registerUser(values);
       sessionStorage.setItem("pistis-pending-email", values.email);
-      navigate("/verify-email", { state: { email: values.email } });
+      navigate("/verify-email", { state: { email: values.email, resendAfterSeconds: result.resendAfterSeconds } });
       return result;
     } catch (error) {
       setServerError(error?.message || "Registration failed. Please try again.");

@@ -59,6 +59,7 @@ html {
 
 body {
   margin: 0;
+  overflow-x: clip;
   min-height: 100vh;
   color: var(--ob-text);
   background-color: var(--ob-bg);
