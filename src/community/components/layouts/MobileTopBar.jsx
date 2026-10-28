@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { Bell, Search, Moon, Sun } from "lucide-react";
+import { useState } from "react";
+import { Bell, Search } from "lucide-react";
+import ThemeToggle from "../../../theme/ThemeToggle";
 import pistis_logo from "../../../assets/logos/pistis_logo.png";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -9,22 +10,6 @@ import NotificationsPanel from "./NotificationsPanel";
 
 const MobileTopBar = ({ onMenuClick }) => {
   const [showNotifications, setShowNotifications] = useState(false);
-  const [theme, setTheme] = useState(() => document.documentElement.classList.contains("dark") ? "dark" : "light");
-
-  useEffect(() => {
-    const syncTheme = () => setTheme(document.documentElement.classList.contains("dark") ? "dark" : "light");
-    syncTheme();
-    window.addEventListener("themechange", syncTheme);
-    return () => window.removeEventListener("themechange", syncTheme);
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark");
-    document.documentElement.style.colorScheme = theme;
-    localStorage.setItem("pistis-theme", theme);
-    window.dispatchEvent(new CustomEvent("themechange"));
-  }, [theme]);
-
   const { data: user } = useQuery({ queryKey: ["me"], queryFn: getMe });
 
   const { data: notifData } = useQuery({
@@ -83,15 +68,7 @@ const MobileTopBar = ({ onMenuClick }) => {
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition text-gray-700 dark:text-slate-100"
-            aria-label="Toggle color mode"
-            title="Toggle color mode"
-          >
-            {theme === "dark" ? <Sun size={18} className="text-yellow-400" /> : <Moon size={18} className="text-gray-700 dark:text-slate-100" />}
-          </button>
+          <ThemeToggle />
 
           {/* Profile */}
           <Link to="/dashboard/profile" className="flex items-center gap-2">

@@ -1,3 +1,4 @@
+import ThemeToggle from "../theme/ThemeToggle";
 import bg from "../assets/pistisTrybeBg.png";
 
 const AuthLayout = ({ children }) => {
@@ -12,6 +13,10 @@ const AuthLayout = ({ children }) => {
         className="hidden md:block absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: `url(${bg})` }}
       />
+
+      <div className="absolute top-4 right-4 z-20">
+        <ThemeToggle variant="switch" />
+      </div>
 
       {/* Content container */}
       <div className="relative w-full flex justify-center lg:justify-start px-6 lg:px-16">
