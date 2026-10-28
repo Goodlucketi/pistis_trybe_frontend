@@ -7,6 +7,7 @@ import Login from "./pages/home/Login";
 import Register from "./pages/home/Register";
 import ForgotPassword from "./pages/home/ForgotPwd";
 import ResetPassword from "./pages/home/ResetPwd";
+import VerifyEmail from "./pages/home/VerifyEmail";
 import AppLayout from "./community/AppLayout";
 import PlainLayout from "./community/PlainLayout";
 import ProtectedRoute from "./auth/ProtectedRoute";
@@ -42,6 +43,7 @@ function App() {
         {/* Public Auth Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
 

@@ -37,9 +37,10 @@ const Register = () => {
       setLoading(true);
       setServerError("");
       setSuccessMessage("");
-      await registerUser(values);
-      setSuccessMessage("Account created successfully!");
-      setTimeout(() => navigate("/login"), 1500);
+      const result = await registerUser(values);
+      sessionStorage.setItem("pistis-pending-email", values.email);
+      navigate("/verify-email", { state: { email: values.email } });
+      return result;
     } catch (error) {
       setServerError(error?.message || "Registration failed. Please try again.");
     } finally {
