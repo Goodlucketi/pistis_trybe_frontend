@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
-import { useEffect, useState } from "react";
+import "./theme/theme";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -7,6 +7,7 @@ import Login from "./pages/home/Login";
 import Register from "./pages/home/Register";
 import ForgotPassword from "./pages/home/ForgotPwd";
 import ResetPassword from "./pages/home/ResetPwd";
+import VerifyEmail from "./pages/home/VerifyEmail";
 import AppLayout from "./community/AppLayout";
 import PlainLayout from "./community/PlainLayout";
 import ProtectedRoute from "./auth/ProtectedRoute";
@@ -29,6 +30,8 @@ import Feed from "./community/components/feed/Feed";
 import BibleReader from "./community/components/feed/BibleReader";
 import Messages from "./pages/messaging/MessagesPage";
 
+import Connections from "./pages/people/Connections";
+import People from "./pages/people/People";
 import UserProfile from './pages/profile/UserProfile';
 import Groups from "./community/components/feed/Groups";
 import GroupDetail from "./community/components/groups/GroupDetail";
@@ -36,37 +39,13 @@ import GroupMembers from "./community/components/groups/GroupMembers";
 import GroupSettings from "./community/components/groups/GroupSettings";
 
 function App() {
-  const [theme, setTheme] = useState(() => {
-    const stored = localStorage.getItem("pistis-theme");
-    if (stored) return stored;
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-  });
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark");
-    document.documentElement.style.colorScheme = theme;
-    localStorage.setItem("pistis-theme", theme);
-  }, [theme]);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleChange = (event) => {
-      const storedTheme = localStorage.getItem("pistis-theme");
-      if (!storedTheme) {
-        setTheme(event.matches ? "dark" : "light");
-      }
-    };
-
-    mediaQuery.addEventListener("change", handleChange);
-    return () => mediaQuery.removeEventListener("change", handleChange);
-  }, []);
-
   return (
     <>
       <Routes>
         {/* Public Auth Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
 
@@ -128,7 +107,9 @@ function App() {
           <Route path="groups/:id" element={<GroupDetail />} />
           <Route path="groups/:id/members" element={<GroupMembers />} />
           <Route path="groups/:id/settings" element={<GroupSettings />} />
+          <Route path="people" element={<People />} />
           <Route path="users/:userId" element={<UserProfile />} />
+          <Route path="users/:userId/connections" element={<Connections />} />
         </Route>
 
         {/* Protected Messages Routes WITHOUT Navbar */}

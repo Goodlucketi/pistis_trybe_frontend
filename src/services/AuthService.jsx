@@ -17,8 +17,18 @@ export const loginUser = async ({ email, password }) => {
 
 export const registerUser = async ({ fullName, email, password }) => {
   const response = await api.post("/auth/register", { fullName, email, password });
+  return response.data.data;
+};
+
+export const verifyEmail = async ({ email, otp }) => {
+  const response = await api.post("/auth/verify-email", { email, otp });
   storeAuth(response.data.data);
   return response.data.data;
+};
+
+export const resendOtp = async ({ email }) => {
+  const response = await api.post("/auth/resend-otp", { email });
+  return response.data;
 };
 
 export const googleLogin = async (credential) => {

@@ -1,8 +1,9 @@
+import ThemeToggle from "../theme/ThemeToggle";
 import bg from "../assets/pistisTrybeBg.png";
 
 const AuthLayout = ({ children }) => {
   return (
-    <div className="relative min-h-screen flex items-center">
+    <div className="relative min-h-screen flex items-center py-10">
 
       {/* Gradient layer */}
       {/* <div className="absolute inset-0 bg-gradient-to-t from-blue-900 via-indigo-600 to-purple-500" /> */}
@@ -12,6 +13,11 @@ const AuthLayout = ({ children }) => {
         className="hidden md:block absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: `url(${bg})` }}
       />
+      <div className="hidden md:block absolute inset-0 ob-auth-scrim" />
+
+      <div className="absolute top-4 right-4 z-20">
+        <ThemeToggle variant="switch" />
+      </div>
 
       {/* Content container */}
       <div className="relative w-full flex justify-center lg:justify-start px-6 lg:px-16">
@@ -19,9 +25,9 @@ const AuthLayout = ({ children }) => {
       </div>
 
       {/* Overlay text */}
-      <div className="hidden md:block absolute left-[40%] bottom-20 text-white font-[roboto]">
-        <h1 className="md:text-7xl ">The Family of <br /> The Pistis Place</h1>
-        <p className="text-xl font-sans my-2">Where Convictions are birthed</p>
+      <div className="hidden md:block absolute left-[40%] bottom-20 text-white font-[roboto] max-w-xl">
+        <h1 className="md:text-7xl font-[bricolage] font-semibold leading-[1.05] tracking-tight">The Family of <br /> The Pistis Place</h1>
+        <p className="text-xl font-sans mt-4 text-purple-200/90">Where Convictions are birthed</p>
       </div>
     </div>
   );

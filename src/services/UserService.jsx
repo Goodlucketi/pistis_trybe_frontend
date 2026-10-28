@@ -20,13 +20,13 @@ export const getUserPosts = async (userId, page = 1, limit = 20) => {
   return response.data.data;
 };
 
-export const getFollowers = async (userId) => {
-  const response = await api.get(`/users/${userId}/followers`);
+export const getFollowers = async (userId, page = 1, limit = 30) => {
+  const response = await api.get(`/users/${userId}/followers`, { params: { page, limit } });
   return response.data.data;
 };
 
-export const getFollowing = async (userId) => {
-  const response = await api.get(`/users/${userId}/following`);
+export const getFollowing = async (userId, page = 1, limit = 30) => {
+  const response = await api.get(`/users/${userId}/following`, { params: { page, limit } });
   return response.data.data;
 };
 
@@ -38,5 +38,15 @@ export const toggleFollow = async (userId) => {
 export const searchUsers = async (query) => {
   if (!query || query.trim().length < 2) return [];
   const response = await api.get("/users/find", { params: { q: query } });
+  return response.data.data;
+};
+
+export const discoverUsers = async ({ query = "", page = 1, limit = 20 } = {}) => {
+  const response = await api.get("/users/discover", { params: { q: query || undefined, page, limit } });
+  return response.data.data;
+};
+
+export const getUserById = async (userId) => {
+  const response = await api.get(`/users/${userId}`);
   return response.data.data;
 };

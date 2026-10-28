@@ -73,12 +73,12 @@ export default function ProfileTopBlock({ user }) {
           )}
 
           <div className="flex flex-wrap gap-4 sm:gap-6 mt-3 text-xs sm:text-sm text-gray-600 dark:text-slate-300">
-            <span className="whitespace-nowrap">
-              <strong className="text-gray-900 dark:text-slate-100">{isEmpty ? 0 : user.followers?.length || 0}</strong> Followers
-            </span>
-            <span className="whitespace-nowrap">
-              <strong className="text-gray-900 dark:text-slate-100">{isEmpty ? 0 : user.following?.length || 0}</strong> Following
-            </span>
+            <Link to={isEmpty ? "#" : `/dashboard/users/${user._id}/connections?tab=followers`} className="whitespace-nowrap hover:underline">
+              <strong className="text-gray-900 dark:text-slate-100">{isEmpty ? 0 : user.followersCount || 0}</strong> Followers
+            </Link>
+            <Link to={isEmpty ? "#" : `/dashboard/users/${user._id}/connections?tab=following`} className="whitespace-nowrap hover:underline">
+              <strong className="text-gray-900 dark:text-slate-100">{isEmpty ? 0 : user.followingCount || 0}</strong> Following
+            </Link>
             <span className="whitespace-nowrap">
               <strong className="text-gray-900 dark:text-slate-100">{isEmpty ? 0 : user.posts?.length || 0}</strong> Posts
             </span>

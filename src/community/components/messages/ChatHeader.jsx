@@ -1,6 +1,7 @@
-import { ArrowLeft, Search, X, Info, Moon, Sun } from "lucide-react";
+import { ArrowLeft, Search, X, Info } from "lucide-react";
+import ThemeToggle from "../../../theme/ThemeToggle";
 import { formatDistanceToNow } from "date-fns";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const ChatHeader = ({ 
   conversation, 
@@ -12,30 +13,6 @@ const ChatHeader = ({
 }) => {
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [theme, setTheme] = useState(() =>
-    document.documentElement.classList.contains("dark") ? "dark" : "light"
-  );
-
-  useEffect(() => {
-    const syncTheme = () => {
-      setTheme(document.documentElement.classList.contains("dark") ? "dark" : "light");
-    };
-
-    syncTheme();
-    const observer = new MutationObserver(syncTheme);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-
-    return () => observer.disconnect();
-  }, []);
-
-  const toggleTheme = () => {
-    const nextTheme = theme === "dark" ? "light" : "dark";
-    document.documentElement.classList.toggle("dark", nextTheme === "dark");
-    document.documentElement.style.colorScheme = nextTheme;
-    localStorage.setItem("pistis-theme", nextTheme);
-    setTheme(nextTheme);
-  };
-
   if (!conversation ||!currentUser) return null;
 
   const isGroup = conversation.type === "group";
@@ -131,15 +108,7 @@ const ChatHeader = ({
       </div>
 
       <div className="flex items-center gap-1">
-        <button
-          type="button"
-          onClick={toggleTheme}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full text-gray-700 dark:text-slate-200"
-          aria-label="Toggle color mode"
-          title="Toggle color mode"
-        >
-          {theme === "dark" ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5 text-gray-700 dark:text-slate-200" />}
-        </button>
+        <ThemeToggle className="rounded-full" />
 
         {isGroup && (
           <button

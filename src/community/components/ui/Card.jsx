@@ -1,6 +1,6 @@
 const Card = ({ children, className = "" }) => {
   return (
-    <div className={`rounded-2xl shadow-sm border border-gray-100 ${className}`}>
+    <div className={`ob-glass rounded-2xl ${className}`}>
       {children}
     </div>
   );

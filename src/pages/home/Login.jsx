@@ -6,7 +6,7 @@ import AuthCard from "../../auth/AuthCard";
 import Input from "../../shared/Input";
 import Button from "../../shared/Btn";
 import useForm from "../../hooks/UseForm";
-import { loginUser, googleLogin } from "../../services/AuthService";
+import { loginUser, googleLogin, resendOtp } from "../../services/AuthService";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -62,6 +62,12 @@ const Login = () => {
         navigate("/dashboard/feed");
       }
     } catch (error) {
+      if (error?.details?.includes?.("EMAIL_NOT_VERIFIED")) {
+        sessionStorage.setItem("pistis-pending-email", values.email);
+        resendOtp({ email: values.email }).catch(() => {});
+        navigate("/verify-email", { state: { email: values.email } });
+        return;
+      }
       setServerError(error?.message || "Login failed. Please check your credentials.");
     } finally {
       setLoading(false);

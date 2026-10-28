@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, MessageCircle } from "lucide-react";
-import { getMe, getUserPosts, getFollowers, getFollowing, toggleFollow } from "../../services/UserService";
+import { getMe, getUserPosts, getUserById, toggleFollow } from "../../services/UserService";
 import { startDirectChat } from "../../services/ChatService";
 import ActivityContent from "../../community/components/profile/ActivityContent";
 import ImageViewer from "../../shared/ImageViewer";
@@ -20,22 +20,7 @@ export default function UserProfile() {
 
   const { data: profileUser, isLoading } = useQuery({
     queryKey: ['user', userId],
-    queryFn: async () => {
-      const response = await import("../../api/api").then(m => m.default.get(`/users/${userId}`));
-      return response.data.data;
-    },
-    enabled: !!userId,
-  });
-
-  const { data: followersData } = useQuery({
-    queryKey: ['followers', userId],
-    queryFn: () => getFollowers(userId),
-    enabled: !!userId,
-  });
-
-  const { data: followingData } = useQuery({
-    queryKey: ['following', userId],
-    queryFn: () => getFollowing(userId),
+    queryFn: () => getUserById(userId),
     enabled: !!userId,
   });
 
@@ -45,14 +30,13 @@ export default function UserProfile() {
     enabled: !!userId,
   });
 
-  const isFollowing = followersData?.followers?.some(
-    (f) => f._id?.toString() === currentUser?._id?.toString()
-  );
+  const isFollowing = !!profileUser?.isFollowing;
 
   const followMutation = useMutation({
     mutationFn: () => toggleFollow(userId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['followers', userId] });
+      queryClient.invalidateQueries({ queryKey: ['user', userId] });
+      queryClient.invalidateQueries({ queryKey: ['people'] });
       queryClient.invalidateQueries({ queryKey: ['feed'] });
     },
     onError: (error) => toast.error(getErrorMessage(error)),
@@ -110,15 +94,29 @@ export default function UserProfile() {
               </div>
 
               <div>
-                <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-slate-100">
-                  {profileUser.fullName || "No name set"}
-                </h2>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-slate-100">
+                    {profileUser.fullName || "No name set"}
+                  </h2>
+                  {!isOwnProfile && profileUser.followsYou && (
+                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-purple-100 text-purple-800">Follows you</span>
+                  )}
+                </div>
                 {profileUser.biography && (
                   <p className="text-sm text-gray-500 dark:text-slate-400 mt-1 max-w-sm">{profileUser.biography}</p>
                 )}
                 <div className="flex flex-wrap gap-4 mt-3 text-xs sm:text-sm text-gray-600 dark:text-slate-300">
-                  <span><strong className="text-gray-900 dark:text-slate-100">{followersData?.followers?.length || 0}</strong> Followers</span>
-                  <span><strong className="text-gray-900 dark:text-slate-100">{followingData?.following?.length || 0}</strong> Following</span>
+                  {[["followers", "Followers", profileUser.followersCount], ["following", "Following", profileUser.followingCount]].map(([tab, label, count]) =>
+                    profileUser.canViewConnections ? (
+                      <Link key={tab} to={`/dashboard/users/${userId}/connections?tab=${tab}`} className="hover:underline">
+                        <strong className="text-gray-900 dark:text-slate-100">{count || 0}</strong> {label}
+                      </Link>
+                    ) : (
+                      <span key={tab} title="Follow each other to see this list">
+                        <strong className="text-gray-900 dark:text-slate-100">{count || 0}</strong> {label}
+                      </span>
+                    )
+                  )}
                   <span><strong className="text-gray-900 dark:text-slate-100">{postsData?.posts?.length || 0}</strong> Posts</span>
                 </div>
               </div>
@@ -142,7 +140,7 @@ export default function UserProfile() {
                       : "bg-[#401667] text-white hover:opacity-90"
                   }`}
                 >
-                  {followMutation.isPending ? "..." : isFollowing ? "Following" : "Follow"}
+                  {followMutation.isPending ? "..." : isFollowing ? "Following" : profileUser.followsYou ? "Follow back" : "Follow"}
                 </button>
               </div>
             )}
