@@ -32,13 +32,14 @@ export const setTheme = (theme) => {
   apply(theme);
   try {
     localStorage.setItem(STORAGE_KEY, theme);
-  } catch { /* storage unavailable */ }
+  } catch (e) {
+    void e;
+  }
   emit();
 };
 
 export const toggleTheme = () => setTheme(current === "dark" ? "light" : "dark");
 
-// Follow the OS only until the user makes an explicit choice.
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
   if (readStored()) return;
   current = e.matches ? "dark" : "light";

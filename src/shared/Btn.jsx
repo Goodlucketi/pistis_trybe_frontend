@@ -11,7 +11,7 @@ const Button = ({
     "w-full py-3 rounded-xl font-semibold tracking-tight transition duration-200 active:scale-[0.99] disabled:cursor-not-allowed";
 
   const variants = {
-    primary: "bg-gray-300 text-white/90 opacity-70 !shadow-none",
+    primary: "bg-[#401667]/35 text-white/80",
     active: "bg-[#401667] text-white",
     secondary: "bg-gray-200 text-gray-800 hover:bg-gray-300 border border-gray-200",
   };

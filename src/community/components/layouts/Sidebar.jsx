@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { X, LogOut, MessageSquareText, CheckCircle2, Send } from "lucide-react";
 import clsx from "clsx";
 import { FiHome, FiUsers, FiBookOpen, FiMessageCircle, FiEdit2, FiChevronLeft } from "react-icons/fi";
-import logo from "../../../assets/logos/sidebar_logo.png";
+import LogoMark from "../../../shared/LogoMark";
 import { logoutUser } from "../../../services/AuthService";
 import CreatePostModal from "../groups/CreatePostModal";
 import CreateGroupModal from "../groups/CreateGroupModal";
@@ -132,7 +132,7 @@ export default function Sidebar({ isOpen, onClose, isMobile = false }) {
                 <LogOut className="w-5 h-5" />
               </button>
               <div className="flex bg-[#6A4094] rounded-lg p-2 justify-center">
-                <img src={logo} alt="Pistis Logo" className="w-8 h-8 rounded-full object-cover" />
+                <LogoMark className="w-8 h-8" />
               </div>
             </div>
           ) : (

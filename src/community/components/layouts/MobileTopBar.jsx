@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Bell, Search } from "lucide-react";
 import ThemeToggle from "../../../theme/ThemeToggle";
-import pistis_logo from "../../../assets/logos/pistis_logo.png";
+import LogoMark from "../../../shared/LogoMark";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getMe } from "../../../services/UserService";
@@ -24,7 +24,7 @@ const MobileTopBar = ({ onMenuClick }) => {
       {/* Logo */}
       <button onClick={onMenuClick} className="flex items-center shrink-0 md:py-3 gap-2">
         <Link to="/dashboard/feed" className="flex items-center gap-2">
-          <img src={pistis_logo} alt="Pistis Trybe Logo" className="w-8 h-8 rounded-full" />
+          <LogoMark className="w-8 h-8" />
           <span className="md:text-lg font-semibold text-gray-800 dark:text-slate-100">Pistis Trybe</span>
         </Link>
       </button>
