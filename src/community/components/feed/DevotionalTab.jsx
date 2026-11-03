@@ -25,7 +25,8 @@ const DevotionalTab = ({ devotional, devoLoading, onJumpToVerse, onSaveAsNote })
           <p className="text-xs text-gray-500 uppercase tracking-wide">
             {new Date(devotional.date).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
           </p>
-          <h2 className="text-2xl font-bold text-gray-900 mt-2">Daily Devotional</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mt-2">Birthing Convictions Devotional</h2>
+          <p className="text-lg font-bold text-gray-900 mt-2">Pastor Japheth Joseph</p>
         </div>
 
         {/* Topic */}
