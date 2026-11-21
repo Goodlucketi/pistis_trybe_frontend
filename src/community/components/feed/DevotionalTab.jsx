@@ -1,4 +1,5 @@
 import { Heart } from "lucide-react";
+import DevotionalContent from "./DevotionalContent";
 
 const DevotionalTab = ({ devotional, devoLoading, onJumpToVerse, onSaveAsNote }) => (
   <div className="p-6">
@@ -18,55 +19,23 @@ const DevotionalTab = ({ devotional, devoLoading, onJumpToVerse, onSaveAsNote })
 
     {devotional && !devoLoading && (
       <div className="max-w-2xl mx-auto">
-        <div className="text-center mb-6">
+        {/* Header: series, author, date */}
+        <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-12 h-12 bg-purple-100 rounded-full mb-3">
             <Heart className="w-6 h-6 text-[#401667]" />
           </div>
-          <p className="text-xs text-gray-500 uppercase tracking-wide">
-            {new Date(devotional.date).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+          <p className="text-sm font-bold text-[#401667] uppercase tracking-widest">
+            {devotional.seriesTitle || "Daily Devotional"}
           </p>
-          <h2 className="text-2xl font-bold text-gray-900 mt-2">Daily Devotional</h2>
-        </div>
-
-        {/* Topic */}
-        {devotional.topic && (
-          <h3 className="text-xl font-bold text-center text-[#401667] mb-6">
-            {devotional.topic}
-          </h3>
-        )}
-
-        {/* Bible Verse */}
-        <div className="bg-purple-50 border-l-4 border-[#401667] rounded-r-xl p-5 mb-6">
-          <p className="text-lg text-gray-800 font-medium italic leading-relaxed">
-            "{devotional.bibleVerse}"
-          </p>
-          <p className="text-sm text-[#401667] font-semibold mt-3">
-            — {devotional.bibleVerseReference}
+          {devotional.author && (
+            <p className="text-sm text-gray-600 mt-1">With {devotional.author}</p>
+          )}
+          <p className="text-xs text-gray-500 uppercase tracking-wide mt-2">
+            {new Date(devotional.date + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
           </p>
         </div>
 
-        {/* Exhortation/Message */}
-        <div className="prose prose-sm max-w-none mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">Message</h3>
-          <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-            {devotional.exhortation}
-          </p>
-        </div>
-
-        {/* Scripture for Meditation */}
-        {devotional.scriptureForMeditation && (
-          <div className="bg-gray-50 rounded-xl p-5 mb-6">
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-              Scripture for Meditation
-            </p>
-            <p className="text-sm text-gray-700 italic leading-relaxed mb-2">
-              "{devotional.scriptureForMeditation}"
-            </p>
-            <p className="text-xs text-[#401667] font-semibold">
-              — {devotional.meditationReference}
-            </p>
-          </div>
-        )}
+        <DevotionalContent d={devotional} />
 
         <div className="mt-8 pt-6 border-t border-gray-200 flex gap-3">
           <button

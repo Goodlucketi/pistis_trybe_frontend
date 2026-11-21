@@ -14,6 +14,7 @@ import NoteModal from "./NoteModal";
 import ReadTab from "./ReadTab";
 import PlanTab from "./PlanTab";
 import DevotionalTab from "./DevotionalTab";
+import { devotionalToText } from "./devotionalText";
 import NotesTab from "./NotesTab";
 
 const fetchPassage = async ({ book, chapter, translation }) => {
@@ -233,7 +234,7 @@ export default function BibleReader() {
     setTab("notes");
     setShowNoteForm(true);
     setNoteTitle(`Devotional: ${devotional.topic || devotional.bibleVerseReference}`);
-    setNoteContent(`Verse: ${devotional.bibleVerse}\n\nReflection: ${devotional.exhortation}`);
+    setNoteContent(devotionalToText(devotional));
   };
 
   return (

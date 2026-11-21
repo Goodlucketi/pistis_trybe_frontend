@@ -1,47 +1,156 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, BookOpen, Eye, EyeOff, Calendar } from "lucide-react";
+import { Plus, Pencil, Trash2, BookOpen, Eye, EyeOff, Calendar, ChevronUp, ChevronDown, X } from "lucide-react";
 import {
   getAdminDevotionals, createDevotional, updateDevotional, deleteDevotional,
 } from "../../../services/DevotionalService";
 import Pagination from "../../../community/components/admin/Pagination";
 import ConfirmModal from "../../../community/components/admin/ConfirmModal";
+import DevotionalContent from "../../../community/components/feed/DevotionalContent";
 import { toast } from "react-toastify";
 
+const DEFAULT_SERIES = "Birthing Conviction Devotional";
+const DEFAULT_AUTHOR = "Pastor Japheth Joseph";
+
+const emptyPoint = () => ({ title: "", scriptureReferences: "", body: "" });
+const emptySection = () => ({ heading: "", scriptureReferences: "", points: [emptyPoint()] });
+
 const EMPTY_FORM = {
+  seriesTitle: DEFAULT_SERIES,
+  author: DEFAULT_AUTHOR,
   topic: "",
-  bibleVerse: "",
   bibleVerseReference: "",
+  bibleVerse: "",
   exhortation: "",
-  scriptureForMeditation: "",
-  meditationReference: "",
+  sections: [emptySection()],
+  confession: "",
+  prayer: "",
   date: new Date().toISOString().split("T")[0],
   isPublished: true,
 };
+
+const inputCls = "w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white";
+const textareaCls = `${inputCls} resize-y`;
+
+const move = (arr, i, dir) => {
+  const j = i + dir;
+  if (j < 0 || j >= arr.length) return arr;
+  const next = [...arr];
+  [next[i], next[j]] = [next[j], next[i]];
+  return next;
+};
+
+function Field({ label, required, hint, children }) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+        {label} {required && <span className="text-red-500">*</span>}
+        {hint && <span className="text-xs text-gray-400 font-normal ml-2">{hint}</span>}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function IconBtn({ onClick, title, disabled, danger, children }) {
+  return (
+    <button
+      type="button" onClick={onClick} title={title} disabled={disabled}
+      className={`p-1.5 rounded-lg transition disabled:opacity-30 disabled:cursor-not-allowed ${
+        danger ? "text-gray-400 hover:text-red-600 hover:bg-red-50" : "text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+const POINT_BODY_PLACEHOLDER =
+  "Explanation. Start a line with \"* \" for a bullet, e.g.\n* The helplessness of man: Man cannot save himself from sin.";
+
+/** Editor for the structured sections: heading → refs → numbered points */
+function SectionsEditor({ sections, onChange }) {
+  const setSection = (si, patch) =>
+    onChange(sections.map((s, i) => (i === si ? { ...s, ...patch } : s)));
+  const setPoint = (si, pi, patch) =>
+    setSection(si, { points: sections[si].points.map((p, i) => (i === pi ? { ...p, ...patch } : p)) });
+
+  return (
+    <div className="space-y-4">
+      {sections.map((s, si) => (
+        <div key={si} className="rounded-2xl border border-purple-100 bg-purple-50/40 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-bold text-[#401667] uppercase tracking-wider">Section {si + 1}</p>
+            <div className="flex items-center">
+              <IconBtn title="Move up" disabled={si === 0} onClick={() => onChange(move(sections, si, -1))}><ChevronUp className="w-4 h-4" /></IconBtn>
+              <IconBtn title="Move down" disabled={si === sections.length - 1} onClick={() => onChange(move(sections, si, 1))}><ChevronDown className="w-4 h-4" /></IconBtn>
+              <IconBtn title="Remove section" danger onClick={() => onChange(sections.filter((_, i) => i !== si))}><Trash2 className="w-4 h-4" /></IconBtn>
+            </div>
+          </div>
+
+          <input
+            className={inputCls} value={s.heading} placeholder="Heading, e.g. WHY IS SOUL WINNING IMPORTANT TO GOD?"
+            onChange={(e) => setSection(si, { heading: e.target.value })}
+          />
+          <input
+            className={inputCls} value={s.scriptureReferences} placeholder="Section scriptures (optional), e.g. Pro. 11:30; Dan. 12:3"
+            onChange={(e) => setSection(si, { scriptureReferences: e.target.value })}
+          />
+
+          <div className="space-y-3 pl-3 border-l-2 border-purple-200">
+            {s.points.map((p, pi) => (
+              <div key={pi} className="bg-white rounded-xl border border-gray-200 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-gray-500">Point {pi + 1}</span>
+                  <div className="flex items-center">
+                    <IconBtn title="Move up" disabled={pi === 0} onClick={() => setSection(si, { points: move(s.points, pi, -1) })}><ChevronUp className="w-4 h-4" /></IconBtn>
+                    <IconBtn title="Move down" disabled={pi === s.points.length - 1} onClick={() => setSection(si, { points: move(s.points, pi, 1) })}><ChevronDown className="w-4 h-4" /></IconBtn>
+                    <IconBtn title="Remove point" danger onClick={() => setSection(si, { points: s.points.filter((_, i) => i !== pi) })}><X className="w-4 h-4" /></IconBtn>
+                  </div>
+                </div>
+                <input
+                  className={inputCls} value={p.title} placeholder="Point title, e.g. It gives joy to the Father."
+                  onChange={(e) => setPoint(si, pi, { title: e.target.value })}
+                />
+                <input
+                  className={inputCls} value={p.scriptureReferences} placeholder="Scriptures (optional), e.g. John 3:16"
+                  onChange={(e) => setPoint(si, pi, { scriptureReferences: e.target.value })}
+                />
+                <textarea
+                  className={textareaCls} rows={3} value={p.body} placeholder={POINT_BODY_PLACEHOLDER}
+                  onChange={(e) => setPoint(si, pi, { body: e.target.value })}
+                />
+              </div>
+            ))}
+            <button
+              type="button" onClick={() => setSection(si, { points: [...s.points, emptyPoint()] })}
+              className="flex items-center gap-1.5 text-xs font-semibold text-[#401667] hover:underline"
+            >
+              <Plus className="w-3.5 h-3.5" /> Add point
+            </button>
+          </div>
+        </div>
+      ))}
+
+      <button
+        type="button" onClick={() => onChange([...sections, emptySection()])}
+        className="w-full py-2.5 border-2 border-dashed border-purple-200 rounded-xl text-sm font-semibold text-[#401667] hover:bg-purple-50 transition flex items-center justify-center gap-2"
+      >
+        <Plus className="w-4 h-4" /> Add section
+      </button>
+    </div>
+  );
+}
 
 function DevotionalPreviewCard({ d }) {
   if (!d?.topic) return null;
   return (
     <div className="space-y-4">
       <div className="text-center">
-        <h2 className="text-xl font-bold text-[#401667]">{d.topic}</h2>
+        <p className="text-xs font-bold text-[#401667] uppercase tracking-widest">{d.seriesTitle || "Daily Devotional"}</p>
+        {d.author && <p className="text-xs text-gray-500 mt-0.5">With {d.author}</p>}
       </div>
-      <div className="bg-white rounded-xl p-4 border-l-4 border-[#401667]">
-        <p className="text-xs font-bold text-[#401667] uppercase tracking-wider mb-1">
-          {d.bibleVerseReference}
-        </p>
-        <p className="text-sm text-gray-700 italic leading-relaxed">"{d.bibleVerse}"</p>
-      </div>
-      <div>
-        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Message</p>
-        <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-line">{d.exhortation}</p>
-      </div>
-      <div className="bg-purple-50 rounded-xl p-4">
-        <p className="text-xs font-bold text-purple-600 uppercase tracking-wider mb-1">
-          Scripture for Meditation — {d.meditationReference}
-        </p>
-        <p className="text-sm text-gray-700 italic leading-relaxed">"{d.scriptureForMeditation}"</p>
-      </div>
+      <DevotionalContent d={d} compact />
     </div>
   );
 }
@@ -96,12 +205,17 @@ export default function AdminDevotionals() {
 
   const handleEdit = (d) => {
     setForm({
+      seriesTitle: d.seriesTitle || DEFAULT_SERIES,
+      author: d.author || "",
       topic: d.topic,
-      bibleVerse: d.bibleVerse,
       bibleVerseReference: d.bibleVerseReference,
+      bibleVerse: d.bibleVerse || "",
       exhortation: d.exhortation,
-      scriptureForMeditation: d.scriptureForMeditation,
-      meditationReference: d.meditationReference,
+      sections: d.sections?.length
+        ? d.sections.map((s) => ({ ...s, points: s.points?.length ? s.points : [emptyPoint()] }))
+        : [emptySection()],
+      confession: d.confession || "",
+      prayer: d.prayer || "",
       date: d.date,
       isPublished: d.isPublished,
     });
@@ -115,16 +229,7 @@ export default function AdminDevotionals() {
     setForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
   };
 
-  const canSubmit = form.topic && form.bibleVerse && form.bibleVerseReference &&
-    form.exhortation && form.scriptureForMeditation && form.meditationReference && form.date;
-
-  const formFields = [
-    { name: "bibleVerseReference", label: "Bible Verse Reference", placeholder: "e.g. John 3:16", type: "input" },
-    { name: "bibleVerse", label: "Bible Verse", placeholder: "For God so loved the world...", type: "textarea", rows: 3 },
-    { name: "exhortation", label: "Exhortation / Message", placeholder: "Write your message to the community...", type: "textarea", rows: 7 },
-    { name: "meditationReference", label: "Scripture for Meditation (Reference)", placeholder: "e.g. Psalm 23:1-6", type: "input" },
-    { name: "scriptureForMeditation", label: "Scripture for Meditation (Text)", placeholder: "The Lord is my shepherd...", type: "textarea", rows: 3 },
-  ];
+  const canSubmit = form.topic && form.bibleVerseReference && form.exhortation && form.date;
 
   return (
     <div className="space-y-6">
@@ -156,7 +261,7 @@ export default function AdminDevotionals() {
                 <h2 className="font-bold text-gray-900">
                   {editingId ? "Edit Devotional" : "New Devotional"}
                 </h2>
-                <p className="text-xs text-gray-400">Fill in all fields</p>
+                <p className="text-xs text-gray-400">Fields marked * are required</p>
               </div>
             </div>
             <button onClick={resetForm} className="text-sm text-gray-400 hover:text-gray-600">
@@ -165,54 +270,59 @@ export default function AdminDevotionals() {
           </div>
 
           <div className="space-y-5">
-            {/* Date */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Date <span className="text-red-500">*</span>
-                <span className="text-xs text-gray-400 font-normal ml-2">
-                  One devotional per day
-                </span>
-              </label>
-              <input
-                type="date" name="date" value={form.date} onChange={handleChange}
-                className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
+            {/* Header info */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Field label="Devotional title">
+                <input name="seriesTitle" value={form.seriesTitle} onChange={handleChange}
+                  placeholder={DEFAULT_SERIES} className={inputCls} />
+              </Field>
+              <Field label="Minister">
+                <input name="author" value={form.author} onChange={handleChange}
+                  placeholder={DEFAULT_AUTHOR} className={inputCls} />
+              </Field>
             </div>
 
-            {/* Topic */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Topic <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text" name="topic" value={form.topic} onChange={handleChange}
-                placeholder="e.g. Walking in Faith"
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
-            </div>
+            <Field label="Date" required hint="One devotional per day">
+              <input type="date" name="date" value={form.date} onChange={handleChange}
+                className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
+            </Field>
 
-            {/* Dynamic fields */}
-            {formFields.map((field) => (
-              <div key={field.name}>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  {field.label} <span className="text-red-500">*</span>
-                </label>
-                {field.type === "input" ? (
-                  <input
-                    type="text" name={field.name} value={form[field.name]}
-                    onChange={handleChange} placeholder={field.placeholder}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                ) : (
-                  <textarea
-                    name={field.name} value={form[field.name]}
-                    onChange={handleChange} placeholder={field.placeholder}
-                    rows={field.rows}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
-                  />
-                )}
-              </div>
-            ))}
+            <Field label="Topic" required>
+              <input name="topic" value={form.topic} onChange={handleChange}
+                placeholder="e.g. Join This Chariot; Becoming Radical with the Gospel of Jesus Christ" className={inputCls} />
+            </Field>
+
+            <Field label="Scripture" required>
+              <input name="bibleVerseReference" value={form.bibleVerseReference} onChange={handleChange}
+                placeholder="e.g. Romans 1:16" className={inputCls} />
+            </Field>
+
+            <Field label="Scripture text" hint="Optional, shown as a quote under the reference">
+              <textarea name="bibleVerse" value={form.bibleVerse} onChange={handleChange} rows={2}
+                placeholder="For I am not ashamed of the gospel of Christ..." className={textareaCls} />
+            </Field>
+
+            <Field label="Message" required hint="Opening message. Leave a blank line between paragraphs">
+              <textarea name="exhortation" value={form.exhortation} onChange={handleChange} rows={7}
+                placeholder="Soul winning is the main assignment of every believer..." className={textareaCls} />
+            </Field>
+
+            <Field label="Sections" hint="Each heading with its numbered points">
+              <SectionsEditor
+                sections={form.sections}
+                onChange={(sections) => setForm((prev) => ({ ...prev, sections }))}
+              />
+            </Field>
+
+            <Field label="Confession">
+              <textarea name="confession" value={form.confession} onChange={handleChange} rows={4}
+                placeholder="I am a radical soul winner..." className={textareaCls} />
+            </Field>
+
+            <Field label="Prayer" hint="Leave a blank line between paragraphs">
+              <textarea name="prayer" value={form.prayer} onChange={handleChange} rows={6}
+                placeholder="Lord, give me a heart for souls..." className={textareaCls} />
+            </Field>
 
             {/* Publish toggle */}
             <div className="flex items-center gap-3">
@@ -288,7 +398,9 @@ export default function AdminDevotionals() {
                   </div>
                   <h3 className="font-bold text-gray-900 text-base">{d.topic}</h3>
                   <p className="text-xs text-purple-600 font-medium mt-0.5">{d.bibleVerseReference}</p>
-                  <p className="text-sm text-gray-500 mt-1 line-clamp-2 italic">"{d.bibleVerse}"</p>
+                  <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                    {d.bibleVerse ? `"${d.bibleVerse}"` : d.exhortation}
+                  </p>
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0">

@@ -45,18 +45,22 @@ const Devotional = () => {
   return (
     <Card className="px-4 py-6 bg-[#4B1D83] text-white relative">
       <div className="mb-2">
-        <h3 className="font-semibold text-sm">Daily Devotional</h3>
-        <p className="text-[10px] text-white/60">{dateLabel}</p>
+        <h3 className="font-semibold text-sm">{devotional.seriesTitle || "Daily Devotional"}</h3>
+        <p className="text-[10px] text-white/60">
+          {devotional.author ? `${devotional.author} · ` : ""}{dateLabel}
+        </p>
       </div>
 
       {devotional.topic && (
-        <p className="font-bold text-white text-sm leading-snug mb-2">
+        <p className="font-bold text-white text-sm leading-snug mb-1">
           {devotional.topic}
         </p>
       )}
 
+      <p className="text-[11px] font-semibold text-purple-200 mb-1">{devotional.bibleVerseReference}</p>
+
       <p className="text-xs text-gray-200 leading-relaxed line-clamp-3 mb-3">
-        "{devotional.bibleVerse}" — {devotional.bibleVerseReference}
+        {devotional.bibleVerse?.trim() ? `"${devotional.bibleVerse}"` : devotional.exhortation}
       </p>
 
       <div className="btn absolute bottom-2 right-8">
